@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+<head>
+<meta charset="utf-8">
+<title>自动切图DEMO</title>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=0" />
+<meta name="format-detection" content="telephone=no">
+<meta http-equiv="Content-Language" content="zh-cn" />
+<meta name="author" content="Tencent-ISUX-Music" />
+<meta name="Copyright" content="Tencent" />
+<meta name="description" content="QQ音乐" />
+<meta name="keywords" content="QQ音乐" />
+<meta name="applicable-device" content="mobile">
+<%#
+    模板数据
+    data = {
+        // 页面大小
+        "width": 640,
+        "height": 2645,
+
+        // 页面背景色
+        "backgroundColor": "#f3e3f7",
+
+        // 分割出来的图片元素
+        "list": [
+
+            // 独立图片元素
+            {
+                "top": 2376,
+                "bottom": 2543,
+                "left": 48,
+                "right": 591,
+                "width": 544,
+                "height": 168,
+                "index": 11,
+
+                // 图像数据，根据分辨率会可能会生成 320、640、原始大小 三种
+                "data": {
+                    "320": "data:image/jpeg;base64,/9j/4AAQS……3M7N9z/9k=",
+                    "src": "data:image/jpeg;base64,/9j/4AAQS……H7q6I//9k="
+                }
+            },
+
+            // 雪碧图类型
+            {
+                "width": 512,
+                "height": 48,
+
+                // 雪碧图中每个子图像元素定位
+                "list": [
+                    {
+                        "left": 8,
+                        "top": 8,
+                        "originalLeft": 240,
+                        "originalTop": 2584,
+                        "width": 160,
+                        "height": 32
+                    },
+                    {
+                        "left": 176,
+                        "top": 8,
+                        "originalLeft": 160,
+                        "originalTop": 1032,
+                        "width": 328,
+                        "height": 24
+                    }
+                ],
+                "backgroundColor": "#f3e3f7",
+                "index": 12,
+                "data": {
+                    "320": "data:image/jpeg;base64,/9j/4AAQS……AP/Z",
+                    "src": "data:image/jpeg;base64,/9j/4AAQS……D/2Q=="
+                }
+            }
+        ]
+    }
+%>
+<%
+    var css = [];
+    css.push("body{background-color:" + data.backgroundColor + "}");
+    if (data.list && data.list.forEach) {
+        data.list.forEach(function(item){
+            css.push(
+                ".bg-" + item.index + "{"
+                    + "width:" + item.width + "px;"
+                    + "height:" + item.height + "px;"
+                    + "left:" + (item.left || 0) + "px;"
+                    + "top:" + (item.top || 0) + "px;"
+                    + "background-image:url(" + item.data.src + ");"
+                    + "background-size:" + item.width + "px"
+                + "}"
+            );
+            if (item.list && item.list.forEach) {
+                item.list.forEach(function(sub, subIndex){
+                    css.push(
+                        ".bg-" + item.index + "-" + subIndex + "{"
+                            + "width:" + sub.width + "px;"
+                            + "height:" + sub.height + "px;"
+                            + "left:" + sub.originalLeft + "px;"
+                            + "top:" + sub.originalTop + "px;"
+                            + "background-position:-" + (sub.left || 0) + "px -" + (sub.top || 0) + "px"
+                        + "}"
+                    );
+                });
+            }
+        });
+
+        for (var i = 3; i > 0; i--) {
+            var w = i * 320;
+            if (data.width > w) {
+                css.push("@media (max-width: " + w + "px) {");
+                data.list.forEach(function(item){
+                    if (item.data[w]) {
+                        css.push(".bg-" + item.index + "{background-image:url(" + item.data[w] + ")}");
+                    }
+                });
+                css.push("}");
+            }
+        }
+    }
+%>
+<style type="text/css">
+.bgwrap{width:100%}
+.bglist{width:<%- data.width || 384 %>px;transform-origin:0 0}
+.bgimg{position:absolute;background-repeat:no-repeat;}
+<%- css.join("\n") %>
+</style>
+</head>
+
+<body>
+
+<!--背景列表-->
+<div class="bgwrap">
+    <div class="bglist">
+        <% if (data.list) { %>
+            <% data.list.forEach(function(item, index){ %>
+                <% if (item.list) { %>
+                    <% item.list.forEach(function(sub, subIndex){ %>
+                        <div class="bgimg bg-<%- index %> bg-<%- index %>-<%- subIndex %>"></div>
+                    <% }) %>
+                <% } else { %>
+                    <div class="bgimg bg-<%- index %>"></div>
+                <% } %>
+            <% }) %>
+        <% } %>
+    </div>
+</div>
+
+<!--自动调节背景缩放-->
+<script>
+    ;(function(){
+        var bglist = document.querySelector(".bglist"),
+            width = <%- data.width || 384 %>,
+            curWidth = window.innerWidth,
+            s = 1;
+        if (width > 0) {
+            s = curWidth / width;
+            if (s != 1) {
+                bglist.style.tranform = bglist.style["-webkit-transform"] = "scale(" + s + ")";
+            }
+        } else {
+            width = curWidth;
+            bglist.style.width = width + "px";
+        }
+        window.addEventListener("resize", function(){
+            s = window.innerWidth / width;
+            if (s != 1) {
+                bglist.style.tranform = bglist.style["-webkit-transform"] = "scale(" + s + ")";
+            }
+        });
+    })();
+</script>
+
+</body>
+</html>

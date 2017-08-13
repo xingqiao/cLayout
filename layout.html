@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <title>智能切图工具</title>
+    <meta name="description" content="智能切图工具" />
+    <meta name="keywords" content="智能切图,重构" />
+    <style>
+        html{font-size:1pc;font-family:"微软雅黑"}
+        body{margin:0;min-width:1100px;background:#303235;letter-spacing:.02em}
+        a,body{color:#303235}
+        a{text-decoration:none}
+        li{list-style:none}
+        button{margin:0 .5em .5em 0;padding:.5em 2em;outline:0;outline-offset:1px;border:2px solid red;background:red;color:#fff;cursor:pointer}
+        button:hover{opacity:.8}
+        button:focus{outline:1px dotted #000}
+        button:active{border-color:#000;background:#000;color:#fff}
+        button[disabled]{opacity:.8}
+        textarea{display:block;overflow-x:auto;box-sizing:border-box;margin:0;padding:10px;width:100%;min-width:200px;min-height:250px;resize:vertical}
+        article{position:fixed;top:2.5rem;right:2.5rem;bottom:2.5rem;left:2.5rem;z-index:1;overflow-x:auto;overflow-y:auto;padding:2rem 4rem;background:#f2eee2;box-shadow:0 0 5px #000;text-align:center;-ms-overflow-style:-ms-autohiding-scrollbar}
+        header h1{margin:0;font-weight:400;font-size:3rem}
+        header dd{display:inline-block;margin:0 2em 0 0}
+        header dd.current{color:red}
+        header dd:after{position:relative;left:1em;color:#303235;content:">"}
+        header dd:last-child:after{content:""}
+        section{position:relative;margin:1em auto;min-width:850px;max-width:1000px;text-align:left}
+        .watermark{display:inline-block;margin-top:2em;color:rgba(33,33,33,.2);text-align:center;text-shadow:0 0 .5em;font-size:3rem;cursor:pointer;-webkit-user-select:none;user-select:none}
+        .watermark:hover{color:rgba(33,33,33,.6)}
+        .flex{display:flex}
+        .panel{margin:1em}
+        .panel-img{display:inline-block;margin:1em 0;padding:1em;border:1px solid #ccc;background-color:#e1e1e1;box-shadow:0 0 .5em #aaa}
+        .panel-img:hover{background-color:#efefef;box-shadow:.5em .5em .5em #aaa}
+        .panel-img figcaption{display:block;overflow:hidden;width:100%;height:2em;max-width:640px;text-overflow:ellipsis;white-space:nowrap;font-size:1rem}
+        .panel-img canvas{outline:1px solid #aaa}
+        .panel-img .content{font-size:0}
+        .panel .content{position:relative}
+        .panel .content canvas{position:absolute;top:0;left:0}
+        .panel .content canvas:first-child{position:static}
+        .panel-menu>div{display:none}
+        .panel-btn{margin:1em 0}
+        .flex-1{flex:1}
+        footer{position:fixed;right:0;bottom:0;left:0;z-index:100;color:#fff;font-size:.9rem}
+        footer .version{position:absolute;right:0;bottom:0;padding:0 2.5rem;background:#303235;line-height:2.5rem}
+        footer .version:before{position:absolute;bottom:.4em;left:.5em;width:1.8em;height:1.8em;background:url(data:image/png;base64,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) no-repeat;background-size:cover;content:""}
+        .ta{text-align:center}
+        .console{overflow-y:auto;margin:1em 0;padding:.5em;max-width:500px;max-height:10em;border:1px solid #888;word-wrap:break-word;word-break:break-all}
+        details{margin-top:1em}
+        details>div{margin-left:1.5em}
+        .js_item>input,.js_item>label,.js_item>output{vertical-align:middle}
+        .js_iconlist_preview{overflow-y:auto;margin:1em 0;max-height:250px}
+        .js_icon_item{position:relative;display:inline-block;margin-right:.5em;width:4pc;height:4pc;border:2px solid transparent;cursor:pointer}
+        .js_icon_item.selected:after,.js_icon_item.selected:before{position:absolute;top:0;right:0;content:""}
+        .js_icon_item.selected:before{border-top:2em solid #26f;border-left:2em solid transparent}
+        .js_icon_item.selected:after{color:#fff;content:"✔"}
+        .js_icon_item.selected{border:2px solid #26f}
+        .js_icon_item canvas,.js_icon_item img{display:block;margin:0 auto;max-width:4pc;max-height:4pc}
+
+        .result{display:flex;flex-direction:column;position:fixed;margin:0;top:0;left:0;right:0;bottom:0;color:#fff;background:rgba(0,0,0,.7);text-align:center;z-index:1000}
+        .result h3{display:inline-block;font-size:3em;vertical-align:middle}
+        .result_close{position:absolute;padding:0 .3em;right:1.5em;top:1.5em;color:#fff;font-size:2em;}
+        .result_close:hover{outline:1px solid #fff}
+        .result_body{flex:1;overflow-y:auto}
+        .result table{width:800px;margin:0 auto 2em;border-collapse:separate;border-spacing:0;table-layout:fixed}
+        .result th,.result td{position:relative;border:1px solid;border-color:transparent #ddd #ddd transparent;text-align:center}
+        .result th:last-child,.result td:last-child{border-right-color:transparent}
+        .result th{font-weight:500;font-size:1.5em;line-height:2em}
+        .result td{line-height:1.6em}
+        .result img{display:block;margin:2px auto;max-width:200px;max-height:100px}
+        .result_export{display:inline-block;margin-left:1em;padding:5px 15px;border:2px solid #f00;font-size:1.2em;color:#fff;background:#f00;vertical-align:middle;}
+    </style>
+</head>
+
+<body>
+<article>
+    <header>
+        <h1>智能切图工具</h1>
+        <nav class="js_nav">
+            <dl>
+                <dd>上传图片</dd>
+                <dd>设置切图参数</dd>
+                <dd>生成重构稿</dd>
+            </dl>
+        </nav>
+    </header>
+
+    <!--水印-->
+    <div class="watermark js_selectfile">点击选择图片<br>或拖放图片到本页面</div>
+
+    <!--工作区-->
+    <section class="main js_main">
+        <div class="flex js_body">
+            <div class="js_panel panel"></div>
+            <div class="js_set panel flex-1" style="display:none">
+                <div class="js_priview"></div>
+                <div class="panel-menu">
+                    <div class="js_menu" data-nav="1">
+                        <h3>参数设置</h3>
+                        <!--<div class="js_item">
+                            <label>页面类型</label>
+                            <label><input class="js_setting" name="type" data-name="type" type="radio" value="h5" checked>H5</label>
+                            <label><input class="js_setting" name="type" data-name="type" type="radio" value="pc">PC</label>
+                        </div>
+                        <hr>-->
+                        <div class="js_item" data-part="h5">
+                            <label>页面宽度</label>
+                            <input class="js_setting" data-name="size" data-unit="px" type="range" min="320" max="960" step="1" value="640">
+                            <output>640px</output>
+                        </div>
+                        <!--<div class="js_item" data-part="pc" style="display:none">
+                            <label>使用自定义背景色</label>
+                            <label title="自动从图像中解析背景色"><input class="js_setting" name="bgColorType" data-name="bgColorType" type="radio" value="0" checked>否</label>
+                            <label><input class="js_setting" name="bgColorType" data-name="bgColorType" type="radio" value="1">是</label>
+                        </div>
+                        <div class="js_item" data-part="pc" style="display:none">
+                            <label>背景色</label>
+                            <input class="js_setting" data-name="bgColor" type="color">
+                            <output></output>
+                        </div>
+                        <hr>-->
+                        <div class="js_item">
+                            <label>精细度</label>
+                            <input class="js_setting" data-name="unitSize" type="range" min="0" max="40" step="1" value="8">
+                            <output>8</output>
+                        </div>
+                        <div class="js_item">
+                            <label>背景色阈值</label>
+                            <input class="js_setting" data-name="scope" type="range" min="0" max="32" step="1" value="10">
+                            <output>10</output>
+                        </div>
+                        <div class="js_item">
+                            <label>切片高度</label>
+                            <input class="js_setting" data-name="limit" type="range" min="300" max="1200" step="6" value="600">
+                            <output>600</output>
+                        </div>
+                        <div class="js_item">
+                            <label>图片质量</label>
+                            <input class="js_setting" data-name="quality" type="range" min="0.5" max="1" step="0.1" value="0.7">
+                            <output>0.7</output>
+                        </div>
+                        <div class="js_item">
+                            <label>拼合小图片</label>
+                            <label><input class="js_setting" name="combine" data-name="combine" type="radio" value="1" checked>开启</label>
+                            <label><input class="js_setting" name="combine" data-name="combine" type="radio" value="0">关闭</label>
+                        </div>
+                    </div>
+                </div>
+                <div class="panel-btn js_panel_btn">
+                    <button class="js_reload" type="button">更换图片</button>
+                    <button class="js_start" type="button">开始切图</button>
+                </div>
+            </div>
+        </div>
+    </section>
+</article>
+
+<figure class="result js_result" style="display:none">
+    <figcaption>
+        <h3>处理结果</h3>
+        <a class="result_export js_result_export" title="导出" href="javascript:;">导出结果</a>
+        <a class="result_close js_result_close" title="关闭" href="javascript:;">X</a>
+    </figcaption>
+    <div class="result_body js_result_body">
+        <table>
+            <thead>
+                <th>序号</th>
+                <th>宽度</th>
+                <th>高度</th>
+                <th style="width:200px">位置</th>
+                <th style="width:200px">预览图</th>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+</figure>
+
+<footer>
+    <span class="version">请使用 IE11+/Chrome 浏览器访问该页面</span>
+</footer>
+<script>if (typeof module === "object") {window.module = module; module = undefined;}</script>
+<script src="./jquery.js"></script>
+<script src="./clayout.js"></script>
+<script>if (window.module) module = window.module;</script>
+<script>
+
+var Page = {
+    obj: {},
+    setting: {
+        size: 640,
+        scope: 10, // 容错值，解决因为压缩导致的颜色偏差
+        unitSize: 0, // 精细度，默认为宽度的四十分之一
+        limit: 600, // 切片高度，超过这个值会进行分割
+        combine: 1, // 是否开启小图片合并
+        quality: 0.7, // 图像质量
+
+        viewSize: 640
+    },
+
+    log: function(text) {
+        if (!Page.logIndex) {
+            Page.logIndex = 0;
+        }
+        console.log.apply(console, arguments);
+        if (!Page.$log || !Page.$log.length) {
+            Page.$log = $(".js_console");
+        }
+        if (Page.$log.length) {
+            Page.$log.show().append($("<div>").text("[" + Page.logIndex + "] " + Array.prototype.join.call(arguments, " "))).scrollTop(Page.$log[0].scrollHeight);
+            Page.logIndex++;
+        }
+    },
+
+    // 切换导航显示
+    nav: function(cur, target) {
+        index = cur ? Math.abs(cur) : 0;
+
+        // 切换导航
+        $(".js_nav .current")
+            .not($(".js_nav dd:eq(" + index + ")").addClass("current"))
+            .removeClass("current");
+
+        // 标记按钮
+        $(".js_next").attr("data-target", target || (index + 1));
+
+        // 菜单切换
+        var $curMenu = $(".js_menu[data-nav=" + index + "]").show();
+        $(".js_menu").not($curMenu).hide();
+
+        // 其他初始化操作
+        if (index == 0) {
+            $(".js_set").hide();
+            $(".js_panel").empty();
+            $(".js_set").hide();
+            delete Page.obj.$workbench;
+            $(".js_selectfile").fadeIn(500);
+        } else if (index == 1) {
+            $(".js_set").fadeIn();
+        }
+    },
+
+    createImgFigure: function(opts) {
+        return $("<figure>")
+            .addClass("panel-img " + (opts.className || ""))
+            .append($("<figcaption>").text(opts.title || ""))
+            .append($("<div>").addClass("content").append(opts.content));
+    },
+
+    formatTitle: function(filename, originalWidth, originalHeight, width){
+        var zoom = Math.round(1000 * width / originalWidth) / 10;
+        return "[" + originalWidth  + " ⨯ " + originalHeight + (zoom != 1 ? " @ " + zoom + "%" : "") + "] " + filename;
+    },
+
+    // 加载图片到canvas
+    loadImgToCanvas: function() {
+        var width = this.setting.size,
+            viewSize = this.setting.viewSize;
+        // 加载图片到canvas
+        var c = CL.loadImgToCanvas(this.obj.img, {width: width, viewWidth: viewSize, backgroundColor: "#fff"});
+        var o = {
+            width: c.width,
+            height: c.height,
+            img: this.obj.img,
+            canvas: {
+                img: c.canvas
+            }
+        };
+
+        $.extend(this.obj, c, o);
+        this.obj.canvas.cover = CL.createCanvas({width: c.width, height: c.height, viewWidth: viewSize, name: "cover"});
+        if (this.obj.$workbench) {
+            this.obj.$workbench.find("figcaption").html(this.formatTitle(this.setting.filename, c.originalWidth, c.originalHeight, c.width));
+            this.obj.$workbench.find(".content").empty().append(this.obj.canvas.img, this.obj.canvas.cover);
+        }
+    },
+
+    // 加载图片文件
+    loadImgFile: function(file) {
+        if (file) {
+            CL.openImgFile(file, function(err, img){
+                if (err) {
+                    return alert(err);
+                } else if (img.width < 320) {
+                    return alert("所选择的图片太小，请选择宽度不小于320的图片")
+                }
+
+                // 隐藏水印
+                $(".watermark").hide();
+
+                // 图片信息
+                Page.obj.img = img;
+                var title = Page.formatTitle(file.name, img.width, img.height, Page.setting.size);
+                Page.log("加载图片：" + title);
+                Page.setting.filename = file.name;
+
+                // 展示图片
+                Page.loadImgToCanvas();
+                var cWidth = $(".js_body").width();
+                Page.obj.$workbench = Page.createImgFigure({
+                        content: [Page.obj.canvas.img, Page.obj.canvas.cover],
+                        wrap: "panel panel-img",
+                        title: title
+                    })
+                    .css({"display": "none", "margin-left": (cWidth - Page.setting.viewSize - 16) / 2})
+                    .appendTo(".js_panel")
+                    .fadeIn()
+                    .delay(500)
+                    .animate({marginLeft: 0}, 500, function(){Page.nav(1)});
+
+                Page.obj.$workbench.append($("<div>").addClass("console js_console").hide());
+            });
+        };
+    },
+
+    // 分析
+    analyse: function() {
+        var time = new Date();
+        var time2 = time;
+        console.time("analyse");
+        CL.analyse(Page.obj.canvas.img, $.extend({
+            onprogress: function() {
+                console.log("[" + this.index + "/" + this.count + "]", new Date() - time, new Date() - time2);
+                time2 = new Date();
+            }
+        }, Page.setting), function(error, data){
+            console.timeEnd("analyse");
+            console.log(data)
+            if (data && data.list) {
+                Page.result = data;
+                // 绘制分割结果
+                var $result = $(".js_result_body tbody").empty();
+                var cover = Page.obj.canvas.cover;
+                ctx = cover.getContext("2d");
+                ctx.clearRect(0, 0, cover.width, cover.height);
+                ctx.textBaseline = "top";
+                ctx.font = "14px 黑体";
+                data.list.forEach(function(item, index) {
+                    var position = [];
+                    if (!item.list) {
+                        ctx.fillStyle = "rgba(0, 0, 255, .4)";
+                        ctx.fillRect(item.left, item.top, item.width, item.height);
+                        ctx.strokeStyle = "rgba(255, 255, 255, .4)";
+                        ctx.strokeRect(item.left, item.top, item.width, item.height);
+                        ctx.fillStyle = "rgb(255, 255, 255)";
+                        ctx.fillText(index + ": " + item.width + " * " + item.height, item.left + 5, item.top + 5);
+                        position.push("[" + item.left + "," + item.top + "]");
+                    } else {
+                        item.list.forEach(function(sub, j) {
+                            ctx.fillStyle = "rgba(0, 0, 255, .4)";
+                            ctx.fillRect(sub.originalLeft, sub.originalTop, sub.width, sub.height);
+                            ctx.strokeStyle = "rgba(255, 255, 255, .4)";
+                            ctx.strokeRect(sub.originalLeft, sub.originalTop, sub.width, sub.height);
+                            ctx.fillStyle = "rgb(255, 255, 255)";
+                            ctx.fillText(index + "." + (j + 1) + ": " + sub.width + " * " + sub.height, sub.originalLeft + 5, sub.originalTop + 5);
+                            position.push("[" + sub.originalLeft + "," + sub.originalTop + " @ " + sub.left + "," + sub.top + "]");
+                        });
+                    }
+
+                    var $tr = $("<tr>").html(
+                        "<td>" + index + "</td>"
+                        + "<td>" + item.width + "</td>"
+                        + "<td>" + item.height + "</td>"
+                        + "<td>" + position.join("<br>") + "</td>"
+                        + "<td><a><img></a></td>"
+                    );
+                    $tr.find("a").attr({target: "_blank", href: item.data});
+                    $tr.find("img").attr("src", item.data.src);
+                    $result.append($tr)
+                });
+                $(".js_result h3").empty().append("分割出图片数：" + data.list.length);
+                $(".js_result").fadeIn();
+            } else {
+                alert(error || "解析图片失败");
+            }
+        });
+    },
+
+    // 初始化
+    init: function() {
+        if (!window.FileReader) {
+            alert("当前浏览器不支持该页面，请升级到IE11，或更换Chrome浏览器。")
+        } else {
+            $(document)
+                // 选择文件
+                .on("dragover dragleave dragend", function(e){return false})
+                .on("drop", function(e){
+                    Page.loadImgFile(e.originalEvent.dataTransfer.files[0]);
+                    return false;
+                })
+                .on("click", ".js_selectfile", function() {
+                    var $o = $("#photo-input");
+                    if (!$o.length) {
+                        $o = $('<input type="file" id="photo-input" style="display:none" accept="image/*">').change(function(){
+                            Page.loadImgFile(this.files[0]);
+                        }).appendTo("body");
+                    };
+                    $o.trigger("click");
+                })
+
+                // 设置
+                .on("change", ".js_setting", function(e) {
+                    var $this = $(this),
+                        name = $this.attr("data-name"),
+                        value = this.value;
+                    if (value != null && (this.type != "radio" || this.checked)) {
+                        $this.next("output").text($this.val() + ($this.attr("data-unit") || ""));
+                        Page.setting[name] = value;
+                        if (name === "type") {
+                            var $o = $this.parents(".js_menu");
+                            $o.find(".js_item[data-part=\"" + value + "\"]").show();
+                            $o.find(".js_item[data-part=\"" + (value === "h5" ? "pc" : "h5") + "\"]").hide();
+                        } else if (name === "size") { // 更改页面宽度
+                            Page.loadImgToCanvas();
+                        }
+                    }
+                })
+
+                .on("click", ".js_reload", function(e) {
+                    location.reload();
+                })
+                .on("click", ".js_start", function(e) {
+                    Page.analyse();
+                })
+                .on("click", ".js_result_close", function(e) {
+                    $(".js_result").fadeOut();
+                });
+
+            $(".js_setting").each(function() {
+                var name = this.getAttribute("data-name"),
+                    value = this.value;
+                if (value != null && (this.type != "radio" || this.checked)) {
+                    Page.setting[name] = this.value;
+                }
+            });
+
+            // Electron环境，允许生成页面
+            if (typeof require !== "undefined") {
+                var ipcRenderer = require("electron").ipcRenderer;
+                ipcRenderer.on("export-result-success", function(event, ret) {
+                    console.log(ret);
+                    try {
+                        ret = JSON.parse(ret);
+                        if (ret.code != 0) {
+                            alert("导出失败：" + ret.error);
+                        } else {
+                            alert("导出成功：" + ret.data);
+                        }
+                    } catch (error) {
+                        alert("导出失败：" + error);
+                    }
+                });
+                $(document).on("click", ".js_result_export", function(e) {
+                    ipcRenderer.send("export-result", JSON.stringify(Page.result));
+                });
+            } else {
+                $(".js_result_export").remove();
+            }
+
+            Page.nav();
+        }
+    }
+};
+
+;(function(){
+    Page.init();
+    $(".js_global_setting").trigger("change");
+})();
+
+</script>
+
+</body>
+
+</html>
