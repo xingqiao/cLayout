@@ -818,7 +818,7 @@ var global = this;
                     var _list = [],
                         small = [];
                     list.forEach(function (item, i) {
-                        if (item.width * item.height < 40000) {
+                        if (item.width * item.height < 360000) {
                             small.push(item);
                         } else {
                             _list.push(item);
