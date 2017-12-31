@@ -9,9 +9,6 @@ const unsigned char ACT_ITEM = 3; // 有效单元格
 #pragma region 引入js定义的方法
 extern "C" {
 
-// 加载图像数据
-void loadData(int offset);
-
 // 输出日志
 void jsLog(int num);
 
