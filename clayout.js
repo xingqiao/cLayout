@@ -506,6 +506,7 @@ var global = this;
             backgroundColor: backgroundColor,
             list: list
         };
+
         callback && callback(null, data);
         return data;
     });
@@ -642,8 +643,16 @@ var global = this;
         if (!opts) {
             opts = {};
         }
-        var width = opts.width || img.width,
-            height = opts.height || img.height;
+        var width = opts.width;
+        var height = opts.height;
+        if (width == null && height == null) {
+            width = img.width;
+            height = img.height;
+        } else if (width == null) {
+            width = parseInt(height * img.width / img.height);
+        } else if (height == null) {
+            height = parseInt(width * img.height / img.width);
+        }
 
         if (width < setting.minWidth) {
             height = parseInt(setting.minWidth * height / width);
@@ -832,7 +841,7 @@ var global = this;
                             return b.height != a.height ? b.height - a.height : b.width - a.width;
                         });
                         var _width, _height, _left, _top, temp;
-                        var _add = function(item, left, top) {
+                        var _add = function (item, left, top) {
                             item && temp && temp.list.push({
                                 left: left,
                                 top: top,
@@ -899,7 +908,7 @@ var global = this;
                                 temp.backgroundColor = backgroundColor;
                                 temp.canvas = CL.createCanvas(temp);
                                 var ctx = temp.canvas.getContext("2d");
-                                temp.list.forEach(function(item) {
+                                temp.list.forEach(function (item) {
                                     ctx.drawImage(item.canvas, item.left, item.top);
                                     delete item.canvas;
                                 });
@@ -932,7 +941,7 @@ var global = this;
                     var w = i * 320,
                         s = w / width;
                     if (width > w) {
-                        list.forEach(function(item) {
+                        list.forEach(function (item) {
                             canvas.width = parseInt(item.width * s);
                             canvas.height = parseInt(item.height * s);
                             ctx.drawImage(item.canvas, 0, 0, canvas.width, canvas.height);
