@@ -16,11 +16,19 @@
 
 - 自适应，一次导出多种不同尺寸的图，生成的页面能自动选择合适大小的图
 
+- 支持使用 WebAssembly 来提升识别性能
+
 下载Electron封装的版本，解压后直接运行目录下的electron.exe，选择设计图按步骤操作就行
 
 ## 文件清单
 
 - `clayout.js` 算法文件，负责页面设计图识别解析
+
+- `loadWebAssembly.js` wasm模块加载器
+
+- `analyse.cpp` 解析算法的c++实现
+
+- `analyse.wasm` 编译后的wasm模块
 
 - `template.html` 生成的页面模版，可以修改这个文件实现在生成的页面上增加公共模块（如页头、底栏）
 

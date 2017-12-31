@@ -161,6 +161,11 @@ var global = this;
         })
     };
 
+    // 预加载 wasm
+    if (window.WebAssembly) {
+        loadWebAssembly("./analyse.wasm", false);
+    }
+
     // worker辅助
     var CW = (function () {
         var worker,
@@ -260,8 +265,104 @@ var global = this;
 
     // CW.init({workerJs: "./clayout.js"});
 
-    // 图片分析
-    CW.on("analyse", function (opts, callback) {
+    // 图片分析（WebAssembly）
+    CW.on("c_analyse", function (opts, callback) {
+        var imageData = opts.imageData,
+            pixes = imageData.data,
+            table = [],
+            list = [],
+            map = {},
+            backgroundColor,
+            width = opts.width, // 页面宽度
+            ww = width * 4,
+            height = opts.height || parseInt(pixes.length / ww), // 页面高度
+            scope = opts.scope > 0 ? opts.scope : 10, // 容错值，解决因为压缩导致的颜色偏差
+            limit = opts.limit >= 100 ? opts.limit : null, // 图片分片高度，值大于100时才有效
+            size = opts.size >= 1 ? parseInt(opts.size) : 8, // 识别精度
+            s1 = size * ww,
+            s2 = size * 4;
+
+        var WA = {};
+        var memData;
+        var logNo = 0;
+
+        loadWebAssembly("./analyse.wasm", {
+            env: {
+                jsLog: function (msg) {
+                    console.log("[log][%d] %d", ++logNo, msg)
+                },
+                // 计算背景色
+                getBgcolor: function (pos, size) {
+                    var h = size / width;
+                    let map = {};
+                    for (let index = pos, count = pos + size; index < count; index += 4) {
+                        if (memData[index + 3] == 2) {// 纯色单元格
+                            let color = (((memData[index] << 8) + memData[index + 1]) << 8) + memData[index + 2];
+                            map[color] = map[color] > 0 ? map[color] + 1 : 1;
+                        }
+                    }
+                    let max = 0;
+                    let bg = 0;
+                    for (const color in map) {
+                        if (map[color] > max) {
+                            max = map[color];
+                            bg = color;
+                        }
+                    }
+                    return bg;
+                }
+            }
+        }).then(instance => {
+            WA = instance.exports;
+
+            let MEM_BLOCK = 65535;
+            let memory = WA.memory;
+            let memSize = memory.buffer.byteLength;
+            if (memSize < pixes.length) {
+                memSize = Math.ceil(pixes.length * 2 / MEM_BLOCK) * MEM_BLOCK;
+                memory.grow(Math.ceil((memSize - memory.buffer.byteLength) / MEM_BLOCK));
+            }
+            memData = new Uint8Array(memory.buffer);
+
+            // 存放图像数据
+            memData.set(pixes, 0);
+
+            // 解析
+            var ptr = WA.analyse(0, width, height, size, limit, scope);
+
+            // 提取解析结果
+            // [0, 3) 背景色 R G B
+            // [3, 7) 裁剪结果数量
+            // [7, 7 + 24n) 裁剪结果列表 left top right bottom width height
+            var data = {
+                scope: scope,
+                size: size,
+                limit: limit,
+                backgroundColor: (0x1000000 + (memData[ptr] << 16) + (memData[ptr + 1] << 8) + memData[ptr + 2]).toString(16).replace(/^1/, "#"),
+                list: []
+            };
+            ptr += 3;
+            var getInt = pos => (memData[pos] << 24) + (memData[pos + 1] << 16) + (memData[pos + 2] << 8) + memData[pos + 3];
+            var count = getInt(ptr);
+            ptr += 4;
+            for (let index = 0; index < count; index++) {
+                data.list.push({
+                    left: getInt(ptr),
+                    top: getInt(ptr + 4),
+                    right: getInt(ptr + 8),
+                    bottom: getInt(ptr + 12),
+                    width: getInt(ptr + 16),
+                    height: getInt(ptr + 20)
+                });
+                ptr += 24;
+            }
+
+            callback && callback(null, data);
+        });
+    });
+
+    // 图片分析（js）
+    CW.on("js_analyse", function (opts, callback) {
         var imageData = opts.imageData,
             pixes = imageData.data,
             table = [],
@@ -278,7 +379,7 @@ var global = this;
             s2 = size * 4;
 
         // 分割图像，先检测空行，进行水平分割，再检查分割出来区域中的空列，进行垂直分割
-        var splitImg = function (opts) {
+        var js_splitImg = function (opts) {
             var _list = [],
                 leftIndex = opts.left,
                 topIndex = opts.top,
@@ -351,18 +452,18 @@ var global = this;
                                 if (_bottom >= _top && _right >= _left) {
                                     // 如果匹配到的区域还存在继续分割的可能，就采用递归的方式继续进行匹配
                                     if (_top != topIndex || _bottom != bottomIndex || _left != leftIndex || _right != rightIndex) {
-                                        _list = _list.concat(splitImg({
-                                            top: _top,
-                                            bottom: _bottom,
+                                        _list = _list.concat(js_splitImg({
                                             left: _left,
-                                            right: _right
+                                            top: _top,
+                                            right: _right,
+                                            bottom: _bottom
                                         }));;
                                     } else {
                                         _list.push({
-                                            top: _top,
-                                            bottom: _bottom,
                                             left: _left,
-                                            right: _right
+                                            top: _top,
+                                            right: _right,
+                                            bottom: _bottom
                                         });
                                     }
 
@@ -446,7 +547,7 @@ var global = this;
         console.time("分割图片");
         if (backgroundColor) {
             backgroundColor = backgroundColor.split("_").map(function (n) { return parseInt(n) });
-            list = splitImg({
+            list = js_splitImg({
                 all: 1, // 标记当前是全图匹配
                 top: 0,
                 bottom: Math.ceil(height / size) - 1,
@@ -479,7 +580,7 @@ var global = this;
             list.forEach(function (item) {
                 if (item.height > limit) {
                     var count = Math.ceil(item.height / limit),
-                        _height = Math.ceil(item.height / count / 15) * 15; // 避免出现半像素导致的横线，2 * 2.5 * 4
+                        _height = Math.ceil(item.height / count / 15) * 15; // 避免出现半像素导致的横线，2 * 2.5 * 3
                     for (var index = 0; index < count; index++) {
                         _list.push({
                             top: item.top,
@@ -508,7 +609,6 @@ var global = this;
         };
 
         callback && callback(null, data);
-        return data;
     });
 
 
@@ -752,6 +852,7 @@ var global = this;
      * @param {Number} opts.unitSize 精细度，默认为宽度的四十分之一
      * @param {Number} opts.limit 切片高度，超过这个值会进行分割，值小于0时不进行切片
      * @param {Boolean} opts.combine 是否开启小图片合并
+     * @param {Number} opts.engine 使用的解析引擎：0-js，1-WebAssembly
      * @param {Function} callback 回掉函数
      */
     CL.analyse = function (img, opts, callback) {
@@ -771,7 +872,7 @@ var global = this;
             analyse(img, opts, callback);
         }
     };
-    var analyse = function (canvas, opts, callback) {
+    function analyse(canvas, opts, callback) {
         var ctx = canvas.getContext("2d"),
             width = canvas.width,
             height = canvas.height,
@@ -781,6 +882,7 @@ var global = this;
             scope = opts.scope, // 容错值，解决因为压缩导致的颜色偏差
             limit = opts.limit, // 切片高度，超过这个值会进行分割
             combine = opts.combine == 1, // 是否开启小图片合并
+            engine = opts.engine, // 使用的解析引擎：0-js，1-WebAssembly
             quality = opts.quality >= 0.5 && opts.quality <= 1 ? opts.quality : 0.7, // 图像质量
             backgroundColor, // 背景色
             list = []; // 解析结果
@@ -789,7 +891,9 @@ var global = this;
             // 图像解析
             function (data, next) {
                 var _series = this;
-                CW.trigger("analyse", {
+                var engineType = engine == 1 ? "c_analyse" : "js_analyse";
+                console.time(engineType);
+                CW.trigger(engineType, {
                     imageData: sourceData,
                     width: canvas.width,
                     height: canvas.height,
@@ -797,6 +901,7 @@ var global = this;
                     scope: scope,
                     limit: limit
                 }, function (error, data) {
+                    console.timeEnd(engineType);
                     if (!error && data && data.list) {
                         backgroundColor = data.backgroundColor;
                         unitSize = data.size;

@@ -97,6 +97,11 @@
                 <div class="panel-menu">
                     <div class="js_menu" data-nav="1">
                         <h3>参数设置</h3>
+                        <div class="js_item">
+                            <label>解析方式</label>
+                            <label><input class="js_setting" name="engine" data-name="engine" type="radio" value="0">JS</label>
+                            <label><input class="js_setting" name="engine" data-name="engine" type="radio" value="1" checked>WebAssembly</label>
+                        </div>
                         <!--<div class="js_item">
                             <label>页面类型</label>
                             <label><input class="js_setting" name="type" data-name="type" type="radio" value="h5" checked>H5</label>
@@ -180,6 +185,7 @@
 </footer>
 <script>if (typeof module === "object") {window.module = module; module = undefined;}</script>
 <script src="./jquery.js"></script>
+<script src="./loadWebAssembly.js"></script>
 <script src="./clayout.js"></script>
 <script>if (window.module) module = window.module;</script>
 <script>
@@ -187,13 +193,13 @@
 var Page = {
     obj: {},
     setting: {
+        engine: 1,
         size: 640,
         scope: 10, // 容错值，解决因为压缩导致的颜色偏差
         unitSize: 0, // 精细度，默认为宽度的四十分之一
         limit: 600, // 切片高度，超过这个值会进行分割
         combine: 1, // 是否开启小图片合并
         quality: 0.7, // 图像质量
-
         viewSize: 640
     },
 
