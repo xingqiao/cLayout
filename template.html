@@ -3,7 +3,9 @@
 <head>
 <meta charset="utf-8">
 <title>自动切图DEMO</title>
+<% if (data.type != 1) { %>
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=0" />
+<% } %>
 <meta name="format-detection" content="telephone=no">
 <meta http-equiv="Content-Language" content="zh-cn" />
 <meta name="author" content="Tencent-ISUX-Music" />
@@ -14,6 +16,9 @@
 <%#
     模板数据
     data = {
+        // 页面类型
+        "type": 0, // 0-H5 1-PC
+
         // 页面大小
         "width": 640,
         "height": 2645,
@@ -108,20 +113,22 @@
         for (var i = 3; i > 0; i--) {
             var w = i * 320;
             if (data.width > w) {
-                css.push("@media (max-width: " + w + "px) {");
+                var _sub = [];
                 data.list.forEach(function(item){
                     if (item.data[w]) {
-                        css.push(".bg-" + item.index + "{background-image:url(" + item.data[w] + ")}");
+                        _sub.push(".bg-" + item.index + "{background-image:url(" + item.data[w] + ")}");
                     }
                 });
-                css.push("}");
+                if (_sub.length) {
+                    css.push("@media (max-width: " + w + "px) {" + _sub.join("") + "}");
+                }
             }
         }
     }
 %>
 <style type="text/css">
 .bgwrap{width:100%}
-.bglist{width:<%- data.width || 384 %>px;transform-origin:0 0}
+.bglist{width:<%- data.width || 384 %>px;<%- data.type != 1 ? "transform-origin:0 0" : "" %>}
 .bgimg{position:absolute;background-repeat:no-repeat;}
 <%- css.join("\n") %>
 </style>
@@ -146,6 +153,7 @@
     </div>
 </div>
 
+<% if (data.type != 1) { %>
 <!--自动调节背景缩放-->
 <script>
     ;(function(){
@@ -170,6 +178,7 @@
         });
     })();
 </script>
+<% } %>
 
 </body>
 </html>

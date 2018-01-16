@@ -4,6 +4,9 @@
     CL.analyse(img, {配置参数}, function(error, data){
         // 返回的data数据结构
         data = {
+            // 页面类型
+            "type": 0, // 0-H5 1-PC
+
             // 页面大小
             "width": 640,
             "height": 2645,
@@ -162,8 +165,9 @@ var global = this;
     };
 
     // 预加载 wasm
+    var wasmUrl = window.WASM_AANALYSE || "./analyse.wasm";
     if (window.WebAssembly) {
-        loadWebAssembly("./analyse.wasm", false);
+        loadWebAssembly(wasmUrl, false);
     }
 
     // worker辅助
@@ -213,7 +217,6 @@ var global = this;
 
         // Worker环境处理
         if (!global.window) {
-            // debugger;
             global.onmessage = function (e) {
                 if (e.data.action && method[e.data.action]) {
                     method[e.data.action](e.data.opts, function (error, data) {
@@ -286,7 +289,7 @@ var global = this;
         var memData;
         var logNo = 0;
 
-        loadWebAssembly("./analyse.wasm", {
+        loadWebAssembly(wasmUrl, {
             env: {
                 jsLog: function (msg) {
                     console.log("[log][%d] %d", ++logNo, msg)
@@ -314,6 +317,8 @@ var global = this;
             }
         }).then(instance => {
             WA = instance.exports;
+
+            let startTime = Date.now();
 
             let MEM_BLOCK = 65535;
             let memory = WA.memory;
@@ -357,12 +362,16 @@ var global = this;
                 ptr += 24;
             }
 
+            data.time = Date.now() - startTime;
+
             callback && callback(null, data);
         });
     });
 
     // 图片分析（js）
     CW.on("js_analyse", function (opts, callback) {
+        let startTime = Date.now();
+
         var imageData = opts.imageData,
             pixes = imageData.data,
             table = [],
@@ -607,6 +616,8 @@ var global = this;
             backgroundColor: backgroundColor,
             list: list
         };
+
+        data.time = Date.now() - startTime;
 
         callback && callback(null, data);
     });
@@ -878,6 +889,7 @@ var global = this;
             height = canvas.height,
             sourceData = ctx.getImageData(0, 0, width, height),
             onprogress = opts.onprogress,
+            type = opts.type, // 页面类型，0-h5页，1-PC页，PC页不进行缩放
             unitSize = opts.unitSize || parseInt(width / 40), // 精细度，默认为宽度的四十分之一
             scope = opts.scope, // 容错值，解决因为压缩导致的颜色偏差
             limit = opts.limit, // 切片高度，超过这个值会进行分割
@@ -886,6 +898,8 @@ var global = this;
             quality = opts.quality >= 0.5 && opts.quality <= 1 ? opts.quality : 0.7, // 图像质量
             backgroundColor, // 背景色
             list = []; // 解析结果
+
+        var engineTime; // 解析引擎耗时
 
         series(setting.async, [
             // 图像解析
@@ -906,6 +920,7 @@ var global = this;
                         backgroundColor = data.backgroundColor;
                         unitSize = data.size;
                         list = data.list;
+                        engineTime = data.time;
                     } else {
                         error && console.log(error);
                         error = ERR.ANALYSE_IMG_ERROR;
@@ -1040,20 +1055,22 @@ var global = this;
             // 缩放
             function (data, next) {
                 var _series = this;
-                var canvas = CL.createCanvas();
-                var ctx = canvas.getContext("2d");
-                for (var i = 1; i < 4; i++) {
-                    var w = i * 320,
-                        s = w / width;
-                    if (width > w) {
-                        list.forEach(function (item) {
-                            canvas.width = parseInt(item.width * s);
-                            canvas.height = parseInt(item.height * s);
-                            ctx.drawImage(item.canvas, 0, 0, canvas.width, canvas.height);
-                            item.data[w] = canvas.toDataURL("image/jpeg", quality);
-                        });
-                    } else {
-                        break;
+                if (type != 1) {
+                    var canvas = CL.createCanvas();
+                    var ctx = canvas.getContext("2d");
+                    for (var i = 1; i < 4; i++) {
+                        var w = i * 320,
+                            s = w / width;
+                        if (width > w) {
+                            list.forEach(function (item) {
+                                canvas.width = parseInt(item.width * s);
+                                canvas.height = parseInt(item.height * s);
+                                ctx.drawImage(item.canvas, 0, 0, canvas.width, canvas.height);
+                                item.data[w] = canvas.toDataURL("image/jpeg", quality);
+                            });
+                        } else {
+                            break;
+                        }
                     }
                 }
                 onprogress && onprogress.call(_series);
@@ -1071,10 +1088,12 @@ var global = this;
             }
         ], function (error) {
             callback(error, {
+                type: type,
                 width: width,
                 height: height,
                 backgroundColor: backgroundColor,
-                list: list
+                list: list,
+                engineTime: engineTime
             });
         }, true);
     }

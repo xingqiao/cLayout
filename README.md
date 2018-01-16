@@ -8,6 +8,8 @@
 
 选择设计稿上传，cLayout可以做到：
 
+- 支持移动端H5页/PC页
+
 - 识别背景色
 
 - 识别独立图片元素
@@ -16,9 +18,11 @@
 
 - 自适应，一次导出多种不同尺寸的图，生成的页面能自动选择合适大小的图
 
-- 支持使用 WebAssembly 来提升识别性能
+- 支持使用 WebAssembly 来提升解析性能
 
 下载Electron封装的版本，解压后直接运行目录下的electron.exe，选择设计图按步骤操作就行
+
+> Electron版本在使用 WebAssembly 时，前两次性能反而比较差，第三次开始性能表现恢复正常，还没找到具体原因，直接用浏览器打开 WebAssembly 的性能表现都大幅度由于 js引擎
 
 ## 文件清单
 
@@ -29,6 +33,8 @@
 - `analyse.cpp` 解析算法的c++实现
 
 - `analyse.wasm` 编译后的wasm模块
+
+- `analyse.wasm.base64.js` wasm模块的base64数据，由于Electron相对路径文件使用的是files协议，而WA不支持files协议链接，所以转成base64使用
 
 - `template.html` 生成的页面模版，可以修改这个文件实现在生成的页面上增加公共模块（如页头、底栏）
 

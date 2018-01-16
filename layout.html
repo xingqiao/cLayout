@@ -21,7 +21,7 @@
         textarea{display:block;overflow-x:auto;box-sizing:border-box;margin:0;padding:10px;width:100%;min-width:200px;min-height:250px;resize:vertical}
         article{position:fixed;top:2.5rem;right:2.5rem;bottom:2.5rem;left:2.5rem;z-index:1;overflow-x:auto;overflow-y:auto;padding:2rem 4rem;background:#f2eee2;box-shadow:0 0 5px #000;text-align:center;-ms-overflow-style:-ms-autohiding-scrollbar}
         header h1{margin:0;font-weight:400;font-size:3rem}
-        header dd{display:inline-block;margin:0 2em 0 0}
+        header dt,header dd{display:inline-block;margin:0 2em 0 0}
         header dd.current{color:red}
         header dd:after{position:relative;left:1em;color:#303235;content:">"}
         header dd:last-child:after{content:""}
@@ -43,7 +43,7 @@
         .flex-1{flex:1}
         footer{position:fixed;right:0;bottom:0;left:0;z-index:100;color:#fff;font-size:.9rem}
         footer .version{position:absolute;right:0;bottom:0;padding:0 2.5rem;background:#303235;line-height:2.5rem}
-        footer .version:before{position:absolute;bottom:.4em;left:.5em;width:1.8em;height:1.8em;background:url(data:image/png;base64,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) no-repeat;background-size:cover;content:""}
+        footer .version:before{position:absolute;bottom:.4em;left:.5em;width:1.8em;height:1.8em;background:url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAFAAAABQBAMAAAB8P++eAAAAGFBMVEX///8Ss1X49dj20R72wQ703HiEwTv5yhaU/y1GAAAAAXRSTlMAQObYZgAAAi1JREFUeF7VkUFv2kAQRi2nKOdRKnrdhtJeA0PwtZQhvlqEKNeuaJ1rVVv13y/L2B7tjHFyzTuip3n7meRdk77V8+5t4md4TUxvT7iv8Ip4+4SI1doDwM+xa0HDMmijYvqIiGsPzG930cPgQccR3dg96EG8d6OeiMPmPIS9eFM8sb/wQAThBgM2HsK4AOGIgXvtTVCJU2SKoYPo9UE5KQclLQftyRmLa+vhUk1mWq1EAZ09yO0jRmR7M4XbkpU5psy7xdHtSYVDbbv7Gwrdnydkf3vxGQU/8si0QmFt242TJ463u0fOInFh20vZotpK7NY8R2n0pr1rt2SIo+2sciw2qsRtO3uSIer2MfKagsUmploD3MS/tGKuzNBuIli8ajQe4CUS7y6I/wA+DYjXjQFgGol/zuIHKy5U+zuL+WhbxGsrNj5q1+0YJW7LstwAZFaMtMoD86JE9cHr1ot214UVPfSISCymJN4GBGmT02INAnzUYrLK1UHd3ibMoRchIu86u1b8QvKHCPJI+tGKV5RL2T6yprtWnBDlZ7wS60BDVLRiSlSfgZhpHiAKo5nDBZF/Jd7Ca2hQpLMXtsgjAw+gxhBT9GK6YnNYzF0i7TGRy9K24i8pq7aPRfa2XJa2iLYspDJbl/mgOhl9RTloT25GD9qT9qAZ/qC8nUsMcwqUkUf7ZIAZL/cAUBKzTIZIDyTYsDWtZ02ud13xLPNVn1U7TH7+WBPlT3uXvD/+A/Qf2pL3e+ZjAAAAAElFTkSuQmCC) no-repeat;background-size:cover;content:""}
         .ta{text-align:center}
         .console{overflow-y:auto;margin:1em 0;padding:.5em;max-width:500px;max-height:10em;border:1px solid #888;word-wrap:break-word;word-break:break-all}
         details{margin-top:1em}
@@ -58,7 +58,7 @@
         .js_icon_item canvas,.js_icon_item img{display:block;margin:0 auto;max-width:4pc;max-height:4pc}
 
         .result{display:flex;flex-direction:column;position:fixed;margin:0;top:0;left:0;right:0;bottom:0;color:#fff;background:rgba(0,0,0,.7);text-align:center;z-index:1000}
-        .result h3{display:inline-block;font-size:3em;vertical-align:middle}
+        .result h3{display:inline-block;font-size:3em;vertical-align:middle;margin-bottom:0}
         .result_close{position:absolute;padding:0 .3em;right:1.5em;top:1.5em;color:#fff;font-size:2em;}
         .result_close:hover{outline:1px solid #fff}
         .result_body{flex:1;overflow-y:auto}
@@ -102,28 +102,16 @@
                             <label><input class="js_setting" name="engine" data-name="engine" type="radio" value="0">JS</label>
                             <label><input class="js_setting" name="engine" data-name="engine" type="radio" value="1" checked>WebAssembly</label>
                         </div>
-                        <!--<div class="js_item">
+                        <div class="js_item">
                             <label>页面类型</label>
-                            <label><input class="js_setting" name="type" data-name="type" type="radio" value="h5" checked>H5</label>
-                            <label><input class="js_setting" name="type" data-name="type" type="radio" value="pc">PC</label>
+                            <label><input class="js_setting" name="type" data-name="type" type="radio" value="0" checked>H5</label>
+                            <label><input class="js_setting" name="type" data-name="type" type="radio" value="1">PC</label>
                         </div>
-                        <hr>-->
                         <div class="js_item" data-part="h5">
                             <label>页面宽度</label>
                             <input class="js_setting" data-name="size" data-unit="px" type="range" min="320" max="960" step="1" value="640">
                             <output>640px</output>
                         </div>
-                        <!--<div class="js_item" data-part="pc" style="display:none">
-                            <label>使用自定义背景色</label>
-                            <label title="自动从图像中解析背景色"><input class="js_setting" name="bgColorType" data-name="bgColorType" type="radio" value="0" checked>否</label>
-                            <label><input class="js_setting" name="bgColorType" data-name="bgColorType" type="radio" value="1">是</label>
-                        </div>
-                        <div class="js_item" data-part="pc" style="display:none">
-                            <label>背景色</label>
-                            <input class="js_setting" data-name="bgColor" type="color">
-                            <output></output>
-                        </div>
-                        <hr>-->
                         <div class="js_item">
                             <label>精细度</label>
                             <input class="js_setting" data-name="unitSize" type="range" min="0" max="40" step="1" value="8">
@@ -165,6 +153,7 @@
         <h3>处理结果</h3>
         <a class="result_export js_result_export" title="导出" href="javascript:;">导出结果</a>
         <a class="result_close js_result_close" title="关闭" href="javascript:;">X</a>
+        <h4></h4>
     </figcaption>
     <div class="result_body js_result_body">
         <table>
@@ -184,6 +173,10 @@
     <span class="version">请使用 IE11+/Chrome 浏览器访问该页面</span>
 </footer>
 <script>if (typeof module === "object") {window.module = module; module = undefined;}</script>
+
+<!-- WA不支持file域名，转换成base64供Electron使用 -->
+<script src="./analyse.wasm.base64.js"></script>
+
 <script src="./jquery.js"></script>
 <script src="./loadWebAssembly.js"></script>
 <script src="./clayout.js"></script>
@@ -194,6 +187,7 @@ var Page = {
     obj: {},
     setting: {
         engine: 1,
+        type: 0, // 页面类型，0-h5页，1-PC页
         size: 640,
         scope: 10, // 容错值，解决因为压缩导致的颜色偏差
         unitSize: 0, // 精细度，默认为宽度的四十分之一
@@ -261,6 +255,12 @@ var Page = {
     loadImgToCanvas: function() {
         var width = this.setting.size,
             viewSize = this.setting.viewSize;
+
+        // PC页不进行缩放
+        if (this.setting.type == 1) {
+            width = null;
+        }
+
         // 加载图片到canvas
         var c = CL.loadImgToCanvas(this.obj.img, {width: width, viewWidth: viewSize, backgroundColor: "#fff"});
         var o = {
@@ -330,6 +330,7 @@ var Page = {
             }
         }, Page.setting), function(error, data){
             console.timeEnd("analyse");
+            var allTime = new Date() - time;
             console.log(data)
             if (data && data.list) {
                 Page.result = data;
@@ -374,6 +375,7 @@ var Page = {
                     $result.append($tr)
                 });
                 $(".js_result h3").empty().append("分割出图片数：" + data.list.length);
+                $(".js_result h4").html("总耗时：" + allTime + "ms / 解析耗时：" + data.engineTime + "ms");
                 $(".js_result").fadeIn();
             } else {
                 alert(error || "解析图片失败");
@@ -408,7 +410,13 @@ var Page = {
                     var $this = $(this),
                         name = $this.attr("data-name"),
                         value = this.value;
-                    if (value != null && (this.type != "radio" || this.checked)) {
+                    if (name == "type") {
+                        $('.js_setting[data-name="size"]').parents(".js_item").toggle(value == 0);
+                        Page.setting[name] = value;
+                        if (Page.obj && Page.obj.img) {
+                            Page.loadImgToCanvas();
+                        }
+                    } else if (value != null && (this.type != "radio" || this.checked)) {
                         $this.next("output").text($this.val() + ($this.attr("data-unit") || ""));
                         Page.setting[name] = value;
                         if (name === "type") {
