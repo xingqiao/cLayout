@@ -19,12 +19,25 @@
         // 页面类型
         "type": 0, // 0-H5 1-PC
 
+        // 初始化参数
+        "opts": {},
+
         // 页面大小
         "width": 640,
         "height": 2645,
 
         // 页面背景色
         "backgroundColor": "#f3e3f7",
+
+        // PC页背景图
+        "backgroundImage": {
+            "width": 960,
+            "height": 960,
+            "index": "bg",
+            "data": {
+                "src": "data:image/jpeg;base64,/9j/4AAQS……H7q6I//9k="
+            }
+        },
 
         // 分割出来的图片元素
         "list": [
@@ -81,8 +94,12 @@
     }
 %>
 <%
+    var opts = data.opts || {};
+    var pageWidth = data.width || 384;
     var css = [];
-    css.push("body{background-color:" + data.backgroundColor + "}");
+    css.push("body,.bgwrap{width:100%;margin:0;background-color:" + data.backgroundColor + "}");
+    css.push(".bglist{width:" + pageWidth + "px}");
+    css.push(".bgimg{position:absolute;background-repeat:no-repeat}");
     if (data.list && data.list.forEach) {
         data.list.forEach(function(item){
             css.push(
@@ -125,16 +142,47 @@
             }
         }
     }
+    var bgDom;
+    if (data.type == 1) {
+        css.push(".bgwrap{position:relative;width:" + pageWidth + "px;margin:0 auto}");
+        var bgimg = data.backgroundImage || {};
+        var bgtype = parseInt(data.opts && data.opts.bgtype || 0);
+        var background = [];
+        if (bgimg.data && bgimg.data.src) {
+            background.push("background:url(" + bgimg.data.src + ") no-repeat 50% 0");
+        }
+        if (bgtype & 1) {
+            bgDom = 1;
+        }
+        if (bgtype & 2) {
+            background.push("background-repeat-y:repeat");
+        }
+        if (bgtype & 3) {
+            background.push("background-size:cover");
+        }
+        if (opts.bgcolor) {
+            background.push("background-color:" + opts.bgcolor);
+        }
+        if (background.length) {
+            css.push((bgDom ? ".bgimg" : "body") + "{" + background.join(";") + "}");
+            if (bgDom) {
+                css.push(".bgimg{position:fixed:top:0;bottom:0;left:0;right:0}");
+            }
+        }
+    } else {
+        css.push(".bglist{transform-origin:0 0}");
+    }
 %>
-<style type="text/css">
-.bgwrap{width:100%}
-.bglist{width:<%- data.width || 384 %>px;<%- data.type != 1 ? "transform-origin:0 0" : "" %>}
-.bgimg{position:absolute;background-repeat:no-repeat;}
+<style>
 <%- css.join("\n") %>
 </style>
 </head>
 
 <body>
+
+<% if (bgDom) { %>
+<div class="bgimg"></div>
+<% } %>
 
 <!--背景列表-->
 <div class="bgwrap">
@@ -158,7 +206,7 @@
 <script>
     ;(function(){
         var bglist = document.querySelector(".bglist"),
-            width = <%- data.width || 384 %>,
+            width = <%- pageWidth %>,
             curWidth = window.innerWidth,
             s = 1;
         if (width > 0) {

@@ -419,6 +419,9 @@ ipcMain.on("export-result", function (event, data) {
     };
     try {
         data = JSON.parse(data);
+        if (data.backgroundImage) {
+            data.list.push(data.backgroundImage);
+        }
         saveImg(data.list, function(error) {
             if (error) {
                 console.log(error);

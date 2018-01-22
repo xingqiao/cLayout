@@ -26,19 +26,15 @@
 
 ## 文件清单
 
-- `clayout.js` 算法文件，负责页面设计图识别解析
-
-- `loadWebAssembly.js` wasm模块加载器
-
-- `analyse.cpp` 解析算法的c++实现
-
-- `analyse.wasm` 编译后的wasm模块
-
-- `analyse.wasm.base64.js` wasm模块的base64数据，由于Electron相对路径文件使用的是files协议，而WA不支持files协议链接，所以转成base64使用
-
-- `template.html` 生成的页面模版，可以修改这个文件实现在生成的页面上增加公共模块（如页头、底栏）
-
-- `clayout-electron.7z` electron封装，支持本地运行导出重构稿
+| 文件 | 说明 |
+|-|-|
+| `clayout.js` | 算法文件，负责页面设计图识别解析 |
+| `layout.html` | Demo入口页面 |
+| `loadWebAssembly.js` | wasm模块加载器 |
+| `analyse.cpp` | 解析算法的c++实现 |
+| `analyse.wasm` | 编译后的wasm模块 |
+| `template.html` | 生成的页面模版，可以修改这个文件实现在生成的页面上增加公共模块（如页头、底栏） |
+| `clayout-electron.7z` | electron封装，支持本地运行导出重构稿 |
 
 ## 调用方法
 
@@ -46,11 +42,22 @@
 CL.analyse(img, {/* 配置参数 */}, function(error, data){
     // 返回的 data 数据结构
     data = {
+        // 页面类型
+        "type": 0, // 0-H5 1-PC
         // 页面大小
         "width": 640,
         "height": 2645,
         // 页面背景色
         "backgroundColor": "#f3e3f7",
+        // PC页背景图
+        "backgroundImage": {
+            "width": 960,
+            "height": 960,
+            "index": "bg",
+            "data": {
+                "src": "data:image/jpeg;base64,/9j/4AAQS……H7q6I//9k="
+            }
+        },
         // 分割出来的图片元素
         "list": [
             // 独立图片元素

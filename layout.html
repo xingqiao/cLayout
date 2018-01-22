@@ -13,7 +13,7 @@
         a,body{color:#303235}
         a{text-decoration:none}
         li{list-style:none}
-        button{margin:0 .5em .5em 0;padding:.5em 2em;outline:0;outline-offset:1px;border:2px solid red;background:red;color:#fff;cursor:pointer}
+        button{margin:0 .5em .5em 0;padding:.5em 1em;outline:0;outline-offset:1px;border:2px solid red;background:red;color:#fff;cursor:pointer}
         button:hover{opacity:.8}
         button:focus{outline:1px dotted #000}
         button:active{border-color:#000;background:#000;color:#fff}
@@ -29,7 +29,7 @@
         .watermark{display:inline-block;margin-top:2em;color:rgba(33,33,33,.2);text-align:center;text-shadow:0 0 .5em;font-size:3rem;cursor:pointer;-webkit-user-select:none;user-select:none}
         .watermark:hover{color:rgba(33,33,33,.6)}
         .flex{display:flex}
-        .panel{margin:1em}
+        .panel{margin:1em .5em}
         .panel-img{display:inline-block;margin:1em 0;padding:1em;border:1px solid #ccc;background-color:#e1e1e1;box-shadow:0 0 .5em #aaa}
         .panel-img:hover{background-color:#efefef;box-shadow:.5em .5em .5em #aaa}
         .panel-img figcaption{display:block;overflow:hidden;width:100%;height:2em;max-width:640px;text-overflow:ellipsis;white-space:nowrap;font-size:1rem}
@@ -48,7 +48,12 @@
         .console{overflow-y:auto;margin:1em 0;padding:.5em;max-width:500px;max-height:10em;border:1px solid #888;word-wrap:break-word;word-break:break-all}
         details{margin-top:1em}
         details>div{margin-left:1.5em}
-        .js_item>input,.js_item>label,.js_item>output{vertical-align:middle}
+        .js_item{padding:.5em .3em}
+        .js_item:hover{background:rgba(0,0,0,.1)}
+        .js_item>label{margin-right:.5em;}
+        .js_item>input,.js_item>label{vertical-align:middle}
+        .js_item>input[type="range"]{display:block;width:100%}
+        .js_item>input[type="number"]{text-indent:.5em}
         .js_iconlist_preview{overflow-y:auto;margin:1em 0;max-height:250px}
         .js_icon_item{position:relative;display:inline-block;margin-right:.5em;width:4pc;height:4pc;border:2px solid transparent;cursor:pointer}
         .js_icon_item.selected:after,.js_icon_item.selected:before{position:absolute;top:0;right:0;content:""}
@@ -98,44 +103,55 @@
                     <div class="js_menu" data-nav="1">
                         <h3>参数设置</h3>
                         <div class="js_item">
-                            <label>解析方式</label>
-                            <label><input class="js_setting" name="engine" data-name="engine" type="radio" value="0">JS</label>
-                            <label><input class="js_setting" name="engine" data-name="engine" type="radio" value="1" checked>WebAssembly</label>
+                            <label>引擎</label>
+                            <div><label><input type="radio" class="js_setting" name="engine" data-name="engine" value="0">JS</label></div>
+                            <div><label><input type="radio" class="js_setting" name="engine" data-name="engine" value="1" checked>WebAssembly</label></div>
                         </div>
                         <div class="js_item">
                             <label>页面类型</label>
-                            <label><input class="js_setting" name="type" data-name="type" type="radio" value="0" checked>H5</label>
-                            <label><input class="js_setting" name="type" data-name="type" type="radio" value="1">PC</label>
+                            <div><label title="页面铺面全屏，并根据屏幕尺寸进行缩放"><input type="radio" class="js_setting" name="type" data-name="type" value="0" checked>H5</label></div>
+                            <div><label title="页面居中展示，两旁留白支持设置背景图和背景色"><input type="radio" class="js_setting" name="type" data-name="type" value="1">PC</label></div>
                         </div>
-                        <div class="js_item" data-part="h5">
+                        <div class="js_item" data-part="0">
                             <label>页面宽度</label>
-                            <input class="js_setting" data-name="size" data-unit="px" type="range" min="320" max="960" step="1" value="640">
-                            <output>640px</output>
+                            <input type="number" class="js_setting" data-name="size" min="320" max="960" step="1" value="640"> px
+                            <input type="range" class="js_setting" data-name="size" min="320" max="960" step="1" value="640">
+                        </div>
+                        <div class="js_item" data-part="1">
+                            <label>背景色</label>
+                            <input type="text" class="js_setting" data-name="bgcolor" value="#ffffff" title="不设置或指无效时为白色">
+                        </div>
+                        <div class="js_item" data-part="1">
+                            <label>背景图</label>
+                            <input type="file" class="js_setting" data-name="bgimg" accept="image/*">
+                            <div><label><input type="checkbox" class="js_setting" data-name="bgtype" value="1">浮动，保持在窗口顶部</label></div>
+                            <div><label><input type="checkbox" class="js_setting" data-name="bgtype" value="2">平铺，在垂直方向上重复</label></div>
+                            <div><label><input type="checkbox" class="js_setting" data-name="bgtype" value="4">拉伸，根据窗口调整背景图大小</label></div>
                         </div>
                         <div class="js_item">
                             <label>精细度</label>
-                            <input class="js_setting" data-name="unitSize" type="range" min="0" max="40" step="1" value="8">
-                            <output>8</output>
+                            <input type="number" class="js_setting" data-name="unitSize" min="0" max="40" step="1" value="8"> px
+                            <input type="range" class="js_setting" data-name="unitSize" min="0" max="40" step="1" value="8">
                         </div>
                         <div class="js_item">
                             <label>背景色阈值</label>
-                            <input class="js_setting" data-name="scope" type="range" min="0" max="32" step="1" value="10">
-                            <output>10</output>
+                            <input type="number" class="js_setting" data-name="scope" min="0" max="32" step="1" value="10">
+                            <input type="range" class="js_setting" data-name="scope" min="0" max="32" step="1" value="10">
                         </div>
                         <div class="js_item">
                             <label>切片高度</label>
-                            <input class="js_setting" data-name="limit" type="range" min="300" max="1200" step="6" value="600">
-                            <output>600</output>
+                            <input type="number" class="js_setting" data-name="limit" min="300" max="1200" step="6" value="600"> px
+                            <input type="range" class="js_setting" data-name="limit" min="300" max="1200" step="6" value="600">
                         </div>
                         <div class="js_item">
                             <label>图片质量</label>
-                            <input class="js_setting" data-name="quality" type="range" min="0.5" max="1" step="0.1" value="0.7">
-                            <output>0.7</output>
+                            <input type="number" class="js_setting" data-name="quality" min="0.5" max="1" step="0.1" value="0.7">
+                            <input type="range" class="js_setting" data-name="quality" min="0.5" max="1" step="0.1" value="0.7">
                         </div>
                         <div class="js_item">
                             <label>拼合小图片</label>
-                            <label><input class="js_setting" name="combine" data-name="combine" type="radio" value="1" checked>开启</label>
-                            <label><input class="js_setting" name="combine" data-name="combine" type="radio" value="0">关闭</label>
+                            <label><input type="radio" class="js_setting" name="combine" data-name="combine" value="1" checked>开启</label>
+                            <label><input type="radio" class="js_setting" name="combine" data-name="combine" value="0">关闭</label>
                         </div>
                     </div>
                 </div>
@@ -173,9 +189,6 @@
     <span class="version">请使用 IE11+/Chrome 浏览器访问该页面</span>
 </footer>
 <script>if (typeof module === "object") {window.module = module; module = undefined;}</script>
-
-<!-- WA不支持file域名，转换成base64供Electron使用 -->
-<script src="./analyse.wasm.base64.js"></script>
 
 <script src="./jquery.js"></script>
 <script src="./loadWebAssembly.js"></script>
@@ -315,7 +328,7 @@ var Page = {
 
                 Page.obj.$workbench.append($("<div>").addClass("console js_console").hide());
             });
-        };
+        }
     },
 
     // 分析
@@ -341,6 +354,18 @@ var Page = {
                 ctx.clearRect(0, 0, cover.width, cover.height);
                 ctx.textBaseline = "top";
                 ctx.font = "14px 黑体";
+                var _append = function (index, item, position) {
+                    var $tr = $("<tr>").html(
+                        "<td>" + index + "</td>"
+                        + "<td>" + item.width + "</td>"
+                        + "<td>" + item.height + "</td>"
+                        + "<td>" + position + "</td>"
+                        + "<td><a><img></a></td>"
+                    );
+                    $tr.find("a").attr({target: "_blank", href: item.data.src});
+                    $tr.find("img").attr("src", item.data.src);
+                    $result.append($tr);
+                };
                 data.list.forEach(function(item, index) {
                     var position = [];
                     if (!item.list) {
@@ -362,18 +387,22 @@ var Page = {
                             position.push("[" + sub.originalLeft + "," + sub.originalTop + " @ " + sub.left + "," + sub.top + "]");
                         });
                     }
-
-                    var $tr = $("<tr>").html(
-                        "<td>" + index + "</td>"
-                        + "<td>" + item.width + "</td>"
-                        + "<td>" + item.height + "</td>"
-                        + "<td>" + position.join("<br>") + "</td>"
-                        + "<td><a><img></a></td>"
-                    );
-                    $tr.find("a").attr({target: "_blank", href: item.data});
-                    $tr.find("img").attr("src", item.data.src);
-                    $result.append($tr)
+                    _append(index, item, position.join("<br>"));
                 });
+                if (data.backgroundImage) {
+                    var position = [];
+                    var bgtype = parseInt(data.opts && data.opts.bgtype || 0);
+                    if (bgtype & 1) {
+                        position.push("浮动");
+                    }
+                    if (bgtype & 2) {
+                        position.push("平铺");
+                    }
+                    if (bgtype & 3) {
+                        position.push("拉伸");
+                    }
+                    _append(index, data.backgroundImage, position.join("<br>"));
+                }
                 $(".js_result h3").empty().append("分割出图片数：" + data.list.length);
                 $(".js_result h4").html("总耗时：" + allTime + "ms / 解析耗时：" + data.engineTime + "ms");
                 $(".js_result").fadeIn();
@@ -388,6 +417,11 @@ var Page = {
         if (!window.FileReader) {
             alert("当前浏览器不支持该页面，请升级到IE11，或更换Chrome浏览器。")
         } else {
+            var _togglePanel = function () {
+                var $curSet = $(".js_set .js_item[data-part=\"" + Page.setting.type + "\"]").show();
+                $(".js_set .js_item[data-part]").not($curSet).hide();
+            };
+
             $(document)
                 // 选择文件
                 .on("dragover dragleave dragend", function(e){return false})
@@ -407,25 +441,57 @@ var Page = {
 
                 // 设置
                 .on("change", ".js_setting", function(e) {
-                    var $this = $(this),
-                        name = $this.attr("data-name"),
-                        value = this.value;
-                    if (name == "type") {
-                        $('.js_setting[data-name="size"]').parents(".js_item").toggle(value == 0);
-                        Page.setting[name] = value;
-                        if (Page.obj && Page.obj.img) {
-                            Page.loadImgToCanvas();
+                    var $o = $(this);
+                    var name = $o.attr("data-name");
+                    var value = this.value;
+
+                    if (/^(?:range|number)$/.test(this.type)) {
+                        value = +value;
+                        var min = $o.attr("min");
+                        if (!isNaN(min) && value < min) {
+                            this.value = value = min;
                         }
-                    } else if (value != null && (this.type != "radio" || this.checked)) {
-                        $this.next("output").text($this.val() + ($this.attr("data-unit") || ""));
-                        Page.setting[name] = value;
+                        var max = $o.attr("max");
+                        if (!isNaN(max) && value > max) {
+                            this.value = value = max;
+                        }
+                    } else if (this.type === "file") {
+                        var file = this.files && this.files[0];
+                        if (file) {
+                            CL.openImgFile(file, function(err, img){
+                                if (!err) {
+                                    Page.setting[name] = img;
+                                }
+                            });
+                        }
+                    } else if (name === "bgtype") {
+                        value = 0;
+                        $('.js_setting[data-name="bgtype"]:checked').each(function () {
+                            if (this.value > 0) {
+                                value += parseInt(this.value);
+                            }
+                        })
+                    }
+
+                    Page.setting[name] = value;
+
+                    if (value != null) {
                         if (name === "type") {
-                            var $o = $this.parents(".js_menu");
-                            $o.find(".js_item[data-part=\"" + value + "\"]").show();
-                            $o.find(".js_item[data-part=\"" + (value === "h5" ? "pc" : "h5") + "\"]").hide();
+                            var $o = $o.parents(".js_menu");
+                            _togglePanel();
+                            if (Page.obj && Page.obj.img) {
+                                Page.loadImgToCanvas();
+                            }
                         } else if (name === "size") { // 更改页面宽度
                             Page.loadImgToCanvas();
                         }
+                    }
+                })
+                .on("input", ".js_setting", function(e) {
+                    if (/^(?:range|number)$/.test(this.type)) {
+                        var $o = $(this);
+                        var value = this.value;
+                        $o.siblings("input").val(value);
                     }
                 })
 
@@ -446,6 +512,7 @@ var Page = {
                     Page.setting[name] = this.value;
                 }
             });
+            _togglePanel();
 
             // Electron环境，允许生成页面
             if (typeof require !== "undefined") {

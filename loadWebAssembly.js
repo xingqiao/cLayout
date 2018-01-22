@@ -25,20 +25,48 @@ const loadWebAssembly = (function () {
         // 创建 WebAssembly 实例
         return new WebAssembly.Instance(module, imports);
     };
-    return (path, imports) => {
-        if (!map[path]) {
-            return fetch(path)
-                .then(response => response.arrayBuffer())
+    // 加载，由于Electron相对路径文件使用的是file协议，fetch不支持file协议链接，所以改用XMLHttpRequest加载
+    const load = url => {
+        if (location.protocol === "file:" && !/^data:/.test(url)) {
+            return new Promise(function(resolve, reject) {
+                let xhr = new XMLHttpRequest();
+                xhr.onreadystatechange = function() {
+                    if (xhr.readyState == 4) {
+                        if (xhr.status == 200) {
+                            try {
+                                let reader = new FileReader();
+                                reader.onload = () => resolve(reader.result);
+                                reader.onerror = e => reject(e);
+                                reader.readAsArrayBuffer(xhr.response);
+                            } catch (e) {
+                                reject(e);
+                            }
+                        } else {
+                            reject(new Error(xhr.statusText));
+                        }
+                    }
+                };
+                xhr.responseType = "blob";
+                xhr.open('GET', url, true);
+                xhr.send();
+            });
+        } else {
+            return fetch(url).then(response => response.arrayBuffer());
+        }
+    };
+    return (url, imports) => {
+        if (!map[url]) {
+            return load(url)
                 .then(buffer => WebAssembly.compile(buffer))
                 .then(module => {
-                    map[path] = module;
+                    map[url] = module;
                     if (imports !== false) {
-                        return createInstance(map[path], imports);
+                        return createInstance(map[url], imports);
                     }
                 });
         } else if (imports !== false) {
             return new Promise(function (resolve, reject) {
-                resolve(createInstance(map[path], imports));
+                resolve(createInstance(map[url], imports));
             });
         }
     }

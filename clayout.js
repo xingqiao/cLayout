@@ -14,6 +14,16 @@
             // 页面背景色
             "backgroundColor": "#f3e3f7",
 
+            // PC页背景图
+            "backgroundImage": {
+                "width": 960,
+                "height": 960,
+                "index": "bg",
+                "data": {
+                    "src": "data:image/jpeg;base64,/9j/4AAQS……H7q6I//9k="
+                }
+            },
+
             // 分割出来的图片元素
             "list": [
 
@@ -165,7 +175,7 @@ var global = this;
     };
 
     // 预加载 wasm
-    var wasmUrl = window.WASM_AANALYSE || "./analyse.wasm";
+    var wasmUrl = "./analyse.wasm";
     if (window.WebAssembly) {
         loadWebAssembly(wasmUrl, false);
     }
@@ -859,14 +869,21 @@ var global = this;
     /**
      * @param {Image|Canvas} img 图片
      * @param {Object} opts
+     * @param {Number} opts.engine 使用的解析引擎：0-js，1-WebAssembly
+     * @param {Number} opts.type 页面类型，0-h5页，1-PC页，PC页不进行缩放
      * @param {Number} opts.scope 容错值，解决因为压缩导致的颜色偏差
      * @param {Number} opts.unitSize 精细度，默认为宽度的四十分之一
      * @param {Number} opts.limit 切片高度，超过这个值会进行分割，值小于0时不进行切片
+     * @param {Number} opts.quality 保存的图像质量，默认为0.7
      * @param {Boolean} opts.combine 是否开启小图片合并
-     * @param {Number} opts.engine 使用的解析引擎：0-js，1-WebAssembly
+     * @param {String} opts.bgcolor PC页背景色
+     * @param {Image|Canvas} opts.bgimg PC页背景图
+     * @param {Number} opts.bgtype PC页背景图加载方式，二进制位表示，从右往左分别是： 保持在窗口顶部 | 在垂直方向上重复 | 水平方向拉伸
      * @param {Function} callback 回掉函数
      */
     CL.analyse = function (img, opts, callback) {
+        //////////////////////////////
+        console.log(opts);
         if (CL.isFunction(opts)) {
             callback = opts;
             opts = {};
@@ -875,9 +892,9 @@ var global = this;
         }
         if (CL.isFunction(callback)) {
             var tagName = img && img.tagName;
-            if (tagName == "IMG") {
+            if (tagName === "IMG") {
                 img = this.loadImgToCanvas(img).canvas;
-            } else if (tagName != "CANVAS") {
+            } else if (tagName !== "CANVAS") {
                 return callback(ERR.PARAM_INVALID);
             }
             analyse(img, opts, callback);
@@ -895,10 +912,11 @@ var global = this;
             limit = opts.limit, // 切片高度，超过这个值会进行分割
             combine = opts.combine == 1, // 是否开启小图片合并
             engine = opts.engine, // 使用的解析引擎：0-js，1-WebAssembly
-            quality = opts.quality >= 0.5 && opts.quality <= 1 ? opts.quality : 0.7, // 图像质量
+            quality = opts.quality >= 0.5 && opts.quality <= 1 ? opts.quality : 0.7, // 保存的图像质量，默认为0.7
             backgroundColor, // 背景色
             list = []; // 解析结果
 
+        var bgimg; // PC背景图
         var engineTime; // 解析引擎耗时
 
         series(setting.async, [
@@ -1083,21 +1101,42 @@ var global = this;
                     item.data.src = item.canvas.toDataURL("image/jpeg", quality);
                     delete item.canvas;
                 });
+                // PC页背景图
+                if (type == 1 && opts.bgimg) {
+                    bgimg = opts.bgimg;
+                    if (bgimg.tagName === "IMG") {
+                        bgimg = CL.loadImgToCanvas(bgimg).canvas;
+                    }
+                    if (bgimg.tagName === "CANVAS") {
+                        bgimg = {
+                            index: "bg",
+                            width: bgimg.width,
+                            height: bgimg.height,
+                            data: {
+                                src: bgimg.toDataURL("image/jpeg", quality)
+                            }
+                        };
+                    } else {
+                        bgimg = null;
+                    }
+                }
                 onprogress && onprogress.call(_series);
                 next();
             }
         ], function (error) {
-            callback(error, {
+            let data = {
+                opts: opts,
                 type: type,
                 width: width,
                 height: height,
+                backgroundImage: bgimg,
                 backgroundColor: backgroundColor,
                 list: list,
                 engineTime: engineTime
-            });
+            };
+            callback(error, data);
         }, true);
     }
-
 
     return CL;
 });
