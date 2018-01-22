@@ -164,9 +164,9 @@
             background.push("background-color:" + opts.bgcolor);
         }
         if (background.length) {
-            css.push((bgDom ? ".bgimg" : "body") + "{" + background.join(";") + "}");
+            css.push((bgDom ? ".bgcover" : "body") + "{" + background.join(";") + "}");
             if (bgDom) {
-                css.push(".bgimg{position:fixed:top:0;bottom:0;left:0;right:0}");
+                css.push(".bgcover{position:fixed;top:0;bottom:0;left:0;right:0}");
             }
         }
     } else {
@@ -181,7 +181,7 @@
 <body>
 
 <% if (bgDom) { %>
-<div class="bgimg"></div>
+<div class="bgcover"></div>
 <% } %>
 
 <!--背景列表-->
