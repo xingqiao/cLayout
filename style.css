@@ -1,0 +1,66 @@
+html{font-size:1pc;font-family:"微软雅黑"}
+body{margin:0;min-width:1100px;background:#303235;letter-spacing:.02em}
+a,body{color:#303235}
+a{text-decoration:none}
+li{list-style:none}
+button{margin:0 .5em .5em 0;padding:.5em 1em;outline:0;outline-offset:1px;border:2px solid red;background:red;color:#fff;cursor:pointer}
+button:hover{opacity:.8}
+button:focus{outline:1px dotted #000}
+button:active{border-color:#000;background:#000;color:#fff}
+button[disabled]{opacity:.8}
+textarea{display:block;overflow-x:auto;box-sizing:border-box;margin:0;padding:10px;width:100%;min-width:200px;min-height:250px;resize:vertical}
+article{position:fixed;top:2.5rem;right:2.5rem;bottom:2.5rem;left:2.5rem;z-index:1;overflow-x:auto;overflow-y:auto;padding:2rem 4rem;background:#f2eee2;box-shadow:0 0 5px #000;text-align:center;-ms-overflow-style:-ms-autohiding-scrollbar}
+header h1{margin:0;font-weight:400;font-size:3rem}
+header dt,header dd{display:inline-block;margin:0 2em 0 0}
+header dd.current{color:red}
+header dd:after{position:relative;left:1em;color:#303235;content:">"}
+header dd:last-child:after{content:""}
+section{position:relative;margin:1em auto;min-width:850px;max-width:1000px;text-align:left}
+.watermark{display:inline-block;margin-top:2em;color:rgba(33,33,33,.2);text-align:center;text-shadow:0 0 .5em;font-size:3rem;cursor:pointer;-webkit-user-select:none;user-select:none}
+.watermark:hover{color:rgba(33,33,33,.6)}
+.flex{display:flex}
+.panel{margin:1em .5em}
+.panel-img{display:inline-block;margin:1em 0;padding:1em;border:1px solid #ccc;background-color:#e1e1e1;box-shadow:0 0 .5em #aaa}
+.panel-img:hover{background-color:#efefef;box-shadow:.5em .5em .5em #aaa}
+.panel-img figcaption{display:block;overflow:hidden;width:100%;height:2em;max-width:640px;text-overflow:ellipsis;white-space:nowrap;font-size:1rem}
+.panel-img canvas{outline:1px solid #aaa}
+.panel-img .content{font-size:0}
+.panel .content{position:relative}
+.panel .content canvas{position:absolute;top:0;left:0}
+.panel .content canvas:first-child{position:static}
+.panel-menu>div{display:none}
+.panel-btn{margin:1em 0}
+.flex-1{flex:1}
+footer{position:fixed;right:0;bottom:0;left:0;z-index:100;color:#fff;font-size:.9rem}
+footer .version{position:absolute;right:0;bottom:0;padding:0 2.5rem;background:#303235;line-height:2.5rem}
+footer .version:before{position:absolute;bottom:.4em;left:.5em;width:1.8em;height:1.8em;background:url(./logo-wt.svg) no-repeat;background-size:cover;content:""}
+.ta{text-align:center}
+.console{overflow-y:auto;margin:1em 0;padding:.5em;max-width:500px;max-height:10em;border:1px solid #888;word-wrap:break-word;word-break:break-all}
+details{margin-top:1em}
+details>div{margin-left:1.5em}
+.js_item{padding:.5em .3em}
+.js_item:hover{background:rgba(0,0,0,.1)}
+.js_item>label{margin-right:.5em;}
+.js_item>input,.js_item>label{vertical-align:middle}
+.js_item>input[type="range"]{display:block;width:100%}
+.js_item>input[type="number"]{text-indent:.5em}
+.js_iconlist_preview{overflow-y:auto;margin:1em 0;max-height:250px}
+.js_icon_item{position:relative;display:inline-block;margin-right:.5em;width:4pc;height:4pc;border:2px solid transparent;cursor:pointer}
+.js_icon_item.selected:after,.js_icon_item.selected:before{position:absolute;top:0;right:0;content:""}
+.js_icon_item.selected:before{border-top:2em solid #26f;border-left:2em solid transparent}
+.js_icon_item.selected:after{color:#fff;content:"✔"}
+.js_icon_item.selected{border:2px solid #26f}
+.js_icon_item canvas,.js_icon_item img{display:block;margin:0 auto;max-width:4pc;max-height:4pc}
+
+.result{display:flex;flex-direction:column;position:fixed;margin:0;top:0;left:0;right:0;bottom:0;color:#fff;background:rgba(0,0,0,.7);text-align:center;z-index:1000}
+.result h3{display:inline-block;font-size:3em;vertical-align:middle;margin-bottom:0}
+.result_close{position:absolute;padding:0 .3em;right:1.5em;top:1.5em;color:#fff;font-size:2em;}
+.result_close:hover{outline:1px solid #fff}
+.result_body{flex:1;overflow-y:auto}
+.result table{width:800px;margin:0 auto 2em;border-collapse:separate;border-spacing:0;table-layout:fixed}
+.result th,.result td{position:relative;border:1px solid;border-color:transparent #ddd #ddd transparent;text-align:center}
+.result th:last-child,.result td:last-child{border-right-color:transparent}
+.result th{font-weight:500;font-size:1.5em;line-height:2em}
+.result td{line-height:1.6em}
+.result img{display:block;margin:2px auto;max-width:200px;max-height:100px}
+.result_export{display:inline-block;margin-left:1em;padding:5px 15px;border:2px solid #f00;font-size:1.2em;color:#fff;background:#f00;vertical-align:middle;}
