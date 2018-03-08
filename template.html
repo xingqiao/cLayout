@@ -212,7 +212,7 @@
         if (width > 0) {
             s = curWidth / width;
             if (s != 1) {
-                bglist.style.tranform = bglist.style["-webkit-transform"] = "scale(" + s + ")";
+                bglist.style.zoom = s;
             }
         } else {
             width = curWidth;
@@ -221,7 +221,7 @@
         window.addEventListener("resize", function(){
             s = window.innerWidth / width;
             if (s != 1) {
-                bglist.style.tranform = bglist.style["-webkit-transform"] = "scale(" + s + ")";
+                bglist.style.zoom = s;
             }
         });
     })();
