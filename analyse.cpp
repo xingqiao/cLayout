@@ -7,18 +7,87 @@ const unsigned char ACT_ITEM = 3; // 有效单元格
 #pragma endregion
 
 #pragma region 引入js定义的方法
-extern "C" {
+extern "C"
+{
 
-// 输出日志
-void jsLog(int num);
-
-// 统计背景色，由js实现
-unsigned int getBgcolor(unsigned char *pos, int size);
+    // 输出日志
+    void jsLog(int num);
 
 }
 #pragma endregion
 
 #pragma region 内部方法
+
+#pragma region 快排
+
+bool checkValue(unsigned char *ptr1, unsigned char *ptr2)
+{
+    if (ptr1[0] > ptr2[0] || (ptr1[0] == ptr2[0] && ptr1[1] > ptr2[1]) || (ptr1[0] == ptr2[0] && ptr1[1] == ptr2[1] && ptr1[2] > ptr2[2]))
+    {
+        return true;
+    }
+    else
+    {
+        return true;
+    }
+}
+
+void swapValue(unsigned char *ptr1, unsigned char *ptr2)
+{
+    if (ptr1 != ptr2)
+    {
+        unsigned char r = ptr1[0];
+        unsigned char g = ptr1[1];
+        unsigned char b = ptr1[2];
+        ptr1[0] = ptr2[0];
+        ptr1[1] = ptr2[1];
+        ptr1[2] = ptr2[2];
+        ptr2[0] = r;
+        ptr2[1] = g;
+        ptr2[2] = b;
+    }
+}
+
+unsigned char *quickSortHelper(unsigned char *startPtr, unsigned char *endPtr) //找基准数 划分
+{
+    unsigned char *i = startPtr + 3;
+    unsigned char *j = endPtr;
+    while (i < j)
+    {
+        while (checkValue(startPtr, i))
+        {
+            i += 3;
+        }
+        while (checkValue(j, startPtr))
+        {
+            j -= 3;
+        }
+        if (i < j)
+        {
+            swapValue(i, j);
+            i += 3;
+            j -= 3;
+        }
+        else
+        {
+            j = i - 3;
+        }
+    }
+    swapValue(i, startPtr);
+    return i;
+}
+
+int quickSort(unsigned char *startPtr, unsigned char *endPtr)
+{
+    if (startPtr >= endPtr)
+    {
+        return 1;
+    }
+    unsigned char *midPtr = quickSortHelper(startPtr, endPtr);
+    return quickSort(startPtr, midPtr - 3) + quickSort(midPtr + 3, endPtr);
+}
+
+#pragma endregion
 
 int getCeil(int a, int b)
 {
@@ -61,7 +130,8 @@ int saveSplitResult(unsigned char *startPtr, int left, int top, int right, int b
 
     int count = 0;
     int _height = height;
-    if (height > 0 && limit > 0) {
+    if (height > 0 && limit > 0)
+    {
         _height = getCeil(height, getCeil(height, limit) * 15) * 15; // 进行分割，同时避免出现半像素导致的横线，2 * 2.5 * 3
     }
     while (height > 0)
@@ -298,102 +368,162 @@ int splitImg(unsigned char *startPtr, unsigned char *memPtr, int colNum, int lef
     return count;
 }
 
+
+unsigned int getBgcolor(unsigned char *startPtr, unsigned char *endPtr)
+{
+    unsigned char *ptr = endPtr;
+    unsigned char *pos;
+    // 将纯色单元格的颜色值放在数据末尾
+    for (pos = startPtr; pos < endPtr; pos += 4)
+    {
+        if (pos[3] == 2)
+        {
+            ptr[0] = pos[0];
+            ptr[1] = pos[1];
+            ptr[2] = pos[2];
+            ptr += 3;
+        }
+    }
+
+    // 排序
+    quickSort(endPtr, ptr - 3);
+
+    // 遍历找出数量最多的那个颜色
+    unsigned char maxR;
+    unsigned char maxG;
+    unsigned char maxB;
+    unsigned char lastR = endPtr[0];
+    unsigned char lastG = endPtr[1];
+    unsigned char lastB = endPtr[2];
+    int lastCount = 0;
+    int maxCount = 0;
+    for (pos = endPtr; pos < ptr; pos += 3)
+    {
+        if (lastR == pos[0] && lastG == pos[1] && lastB == pos[2])
+        {
+            lastCount++;
+        }
+        else
+        {
+            if (maxCount < lastCount)
+            {
+                maxR = lastR;
+                maxG = lastG;
+                maxB = lastB;
+                maxCount = lastCount;
+                // jsLog(lastCount);
+            }
+            lastR = pos[0];
+            lastG = pos[1];
+            lastB = pos[2];
+            lastCount = 1;
+        }
+    }
+    if (maxCount < lastCount)
+    {
+        maxR = lastR;
+        maxG = lastG;
+        maxB = lastB;
+    }
+    return ((maxR * 256) + maxG) * 256 + maxB;
+}
+
 #pragma endregion
 
 #pragma region 提供给js的方法
 
-extern "C" {
-
-/**
- * @param {Image|Canvas} img 图片
- * @param {unsigned char *} startPtr 内存空间
- * @param {int} width 图片宽度
- * @param {int} height 图片高度
- * @param {int} size 识别精度
- * @param {int} limit 切片高度，超过这个值会进行分割，值小于0时不进行切片
- * @param {int} scope 容错值，解决因为压缩导致的颜色偏差
- * @return {unsigned char *} 结果数据指针
- */
-unsigned char *analyse(unsigned char *startPtr, int width, int height, int size, int limit, int scope)
+extern "C"
 {
-    // 图片数据长度
-    int dataSize = width * height * 4;
 
-    // 一行对应的数据长度
-    int lineSize = width * 4;
-
-    int s1 = size * lineSize;
-    int s2 = size * 4;
-
-    // 计算索引
-    int w = getCeil(width, size);
-    int h = getCeil(height, size);
-
-    // 图像数据只依次遍历一次，因此可以将索引信息直接覆盖在上面
-    unsigned char *memPtr = startPtr;
-
-    // 计算纯色单元索引 getCeil(width, size) * getCeil(height, size) * 4
-    for (int y = 0, p1 = 0, iy = 0; y < height; y += size, p1 += s1, iy++)
+    /**
+     * @param {Image|Canvas} img 图片
+     * @param {unsigned char *} startPtr 内存空间
+     * @param {int} width 图片宽度
+     * @param {int} height 图片高度
+     * @param {int} size 识别精度
+     * @param {int} limit 切片高度，超过这个值会进行分割，值小于0时不进行切片
+     * @param {int} scope 容错值，解决因为压缩导致的颜色偏差
+     * @return {unsigned char *} 结果数据指针
+     */
+    unsigned char *analyse(unsigned char *startPtr, int width, int height, int size, int limit, int scope)
     {
-        for (int x = 0, p2 = p1, ix = 0; x < width; x += size, p2 += s2, ix++)
-        {
-            int size_w = size > width - x ? width - x : size;
-            int size_h = size > height - y ? height - y : size;
+        // 图片数据长度
+        int dataSize = width * height * 4;
 
-            // 统计方格内颜色值
-            for (int i = 0, p3 = p2; i < size_h; i++, p3 += lineSize)
+        // 一行对应的数据长度
+        int lineSize = width * 4;
+
+        int s1 = size * lineSize;
+        int s2 = size * 4;
+
+        // 计算索引
+        int w = getCeil(width, size);
+        int h = getCeil(height, size);
+
+        // 图像数据只依次遍历一次，因此可以将索引信息直接覆盖在上面
+        unsigned char *memPtr = startPtr;
+
+        // 计算纯色单元索引 getCeil(width, size) * getCeil(height, size) * 4
+        for (int y = 0, p1 = 0, iy = 0; y < height; y += size, p1 += s1, iy++)
+        {
+            for (int x = 0, p2 = p1, ix = 0; x < width; x += size, p2 += s2, ix++)
             {
-                for (int j = 0, p4 = p3; j < size_w; j++, p4 += 4)
+                int size_w = size > width - x ? width - x : size;
+                int size_h = size > height - y ? height - y : size;
+
+                // 统计方格内颜色值
+                for (int i = 0, p3 = p2; i < size_h; i++, p3 += lineSize)
                 {
-                    unsigned char r = startPtr[p4];
-                    unsigned char g = startPtr[p4 + 1];
-                    unsigned char b = startPtr[p4 + 2];
-                    if (memPtr[3] != BG_ITEM)
+                    for (int j = 0, p4 = p3; j < size_w; j++, p4 += 4)
                     {
-                        memPtr[0] = r;
-                        memPtr[1] = g;
-                        memPtr[2] = b;
-                        memPtr[3] = BG_ITEM;
-                    }
-                    else if (
-                        (getAbs(memPtr[0] - r) > scope) ||
-                        (getAbs(memPtr[1] - g) > scope) ||
-                        (getAbs(memPtr[2] - b) > scope))
-                    { // 颜色不一致，跳出循环
-                        memPtr[3] = ACT_ITEM;
-                        i = size_h;
-                        j = size_w;
+                        unsigned char r = startPtr[p4];
+                        unsigned char g = startPtr[p4 + 1];
+                        unsigned char b = startPtr[p4 + 2];
+                        if (memPtr[3] != BG_ITEM)
+                        {
+                            memPtr[0] = r;
+                            memPtr[1] = g;
+                            memPtr[2] = b;
+                            memPtr[3] = BG_ITEM;
+                        }
+                        else if (
+                            (getAbs(memPtr[0] - r) > scope) ||
+                            (getAbs(memPtr[1] - g) > scope) ||
+                            (getAbs(memPtr[2] - b) > scope))
+                        { // 颜色不一致，跳出循环
+                            memPtr[3] = ACT_ITEM;
+                            i = size_h;
+                            j = size_w;
+                        }
                     }
                 }
+
+                memPtr += 4;
             }
-
-            memPtr += 4;
         }
+
+        // 判断背景色
+        int backgroundColorValue = getBgcolor(startPtr, memPtr);
+        unsigned char bgR = backgroundColorValue >> 16;
+        unsigned char bgG = (backgroundColorValue >> 8) % 256;
+        unsigned char bgB = backgroundColorValue % 256;
+
+        // 计算索引
+        memPtr = indexImg(startPtr, bgR, bgG, bgB, scope, w, h);
+
+        // 分割图片
+        int count = splitImg(startPtr, memPtr + 7, w, 0, 0, w - 1, h - 1, width, height, size, limit);
+
+        // [0, 3) 背景色 R G B
+        // [3, 7) 裁剪结果数量
+        // [7, 7 + 24n) 裁剪结果列表 left top right bottom width height
+        memPtr[0] = bgR;
+        memPtr[1] = bgG;
+        memPtr[2] = bgB;
+        setIntValue(memPtr + 3, count);
+
+        return memPtr;
     }
-
-    // 判断背景色
-    int backgroundColorValue = getBgcolor(startPtr, memPtr - startPtr);
-    unsigned char bgR = backgroundColorValue >> 16;
-    unsigned char bgG = (backgroundColorValue >> 8) % 256;
-    unsigned char bgB = backgroundColorValue % 256;
-
-    // 计算索引
-    memPtr = indexImg(startPtr, bgR, bgG, bgB, scope, w, h);
-
-    // 分割图片
-    int count = splitImg(startPtr, memPtr + 7, w, 0, 0, w - 1, h - 1, width, height, size, limit);
-
-    // [0, 3) 背景色 R G B
-    // [3, 7) 裁剪结果数量
-    // [7, 7 + 24n) 裁剪结果列表 left top right bottom width height
-    memPtr[0] = bgR;
-    memPtr[1] = bgG;
-    memPtr[2] = bgB;
-    setIntValue(memPtr + 3, count);
-
-    return memPtr;
-}
-
 }
 
 #pragma endregion

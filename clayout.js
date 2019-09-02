@@ -82,106 +82,58 @@
 
 var global = this;
 
-; (function (window, factory) {
+(function(window, factory) {
+    'use strict';
 
-    "use strict";
-
-    if (typeof module === "object" && typeof module.exports === "object") {
+    if (typeof module === 'object' && typeof module.exports === 'object') {
         module.exports = factory(window);
     } else {
         window.CL = factory(window);
     }
+})(typeof window !== 'undefined' ? window : global, function(window) {
+    'use strict';
 
-})(typeof window !== "undefined" ? window : global, function (window) {
-
-    "use strict";
-
-    // 串行控制流
-    var series = function (async, tasks, callback) {
-        if (typeof async === "function" || async instanceof Array) {
-            callback = tasks;
-            tasks = async;
-            async = false;
-        }
-        if (typeof tasks === "function") {
+    /**
+     * 串行流程控制，类似async.js
+     * @param {Function[]} tasks 要执行的函数数组
+     * @param {Function} callback 回调函数
+     */
+    function series(tasks, callback) {
+        if (!Array.isArray(tasks)) {
             tasks = [tasks];
-        } else if (!tasks) {
-            tasks = [];
         }
-        if (typeof callback != "function") {
-            callback = null;
-        }
-        var pos = -1, data;
-        function iterator() {
-            pos++;
-            if (pos < tasks.length) {
-                var task = tasks[pos];
-                if (typeof task === "function") {
-                    task.call({ index: pos + 1, count: tasks.length }, data, function (error, lastdata) {
-                        if (error) {
-                            callback && callback(error, data);
-                        } else {
-                            data = lastdata;
-                            if (async) {
-                                setTimeout(iterator, 0);
-                            } else {
-                                iterator();
-                            }
+        let flags = [];
+        let iterator = (index, error, ...data) => {
+            if (error || index >= tasks.length) {
+                if (typeof callback === 'function') {
+                    return callback(error, ...data);
+                }
+            } else {
+                let task = tasks[index];
+                if (typeof task === 'function') {
+                    return task((err, ...lastData) => {
+                        // 避免重复执行
+                        if (!flags[index]) {
+                            flags[index] = 1;
+                            iterator(index + 1, err, ...lastData);
                         }
-                    });
+                    }, ...data);
                 } else {
-                    iterator();
-                }
-            } else {
-                callback && callback(null, data);
-            }
-        };
-        iterator();
-    };
-    // 并行控制流
-    var parallel = function (tasks, callback) {
-        if (Object.prototype.toString.call(tasks) !== "[object Array]") {
-            tasks = [tasks];
-        }
-        if (typeof callback !== "function") {
-            callback = null;
-        }
-        var results = [], // 保存任务结果
-            flags = (1 << tasks.length) - 1, // 标记任务状态
-            n = flags;
-        var _done = function (error, data, i) {
-            if (callback) {
-                if (error) {
-                    flags = 0;
-                } else {
-                    results[i] = data;
-                    flags &= (n - (1 << i));
-                }
-                if (!flags) {
-                    callback(error, results);
-                    callback = null;
+                    return iterator(index + 1, null, task);
                 }
             }
         };
-        tasks.forEach(function (item, i) {
-            if (typeof item === "function") {
-                item(function (error, data) {
-                    _done(error, data, i);
-                });
-            } else {
-                _done(null, item, i);
-            }
-        })
-    };
+        return iterator(0);
+    }
 
     // 预加载 wasm
-    var wasmUrl = "./analyse.wasm";
+    var wasmUrl = './analyse.wasm';
     if (window.WebAssembly) {
         loadWebAssembly(wasmUrl, false);
     }
 
     // worker辅助
-    var CW = (function () {
+    var CW = (function() {
         var worker,
             href,
             index = 0,
@@ -189,17 +141,17 @@ var global = this;
             method = {};
 
         // 初始化worker
-        var initWorker = function () {
+        var initWorker = function() {
             if (worker && worker.url != href) {
                 worker = null;
             }
-            if (!worker && href && typeof Worker !== "undefined") {
+            if (!worker && href && typeof Worker !== 'undefined') {
                 try {
                     worker = new Worker(href);
-                    worker.onmessage = worker.onerror = function (e) {
+                    worker.onmessage = worker.onerror = function(e) {
                         // console.log(e)
 
-                        if (e.type == "message") {
+                        if (e.type == 'message') {
                             var item = tasks[e.data && e.data.id];
                             if (item && item.callback) {
                                 item.callback(e.data.error, e.data.result);
@@ -209,8 +161,15 @@ var global = this;
                             worker = href = null;
                             for (var no in tasks) {
                                 var item = tasks[no];
-                                if (item && item.action && method[item.action]) {
-                                    method[item.action](item.opts, item.callback);
+                                if (
+                                    item &&
+                                    item.action &&
+                                    method[item.action]
+                                ) {
+                                    method[item.action](
+                                        item.opts,
+                                        item.callback
+                                    );
                                 }
                                 delete tasks[no];
                             }
@@ -227,9 +186,9 @@ var global = this;
 
         // Worker环境处理
         if (!global.window) {
-            global.onmessage = function (e) {
+            global.onmessage = function(e) {
                 if (e.data.action && method[e.data.action]) {
-                    method[e.data.action](e.data.opts, function (error, data) {
+                    method[e.data.action](e.data.opts, function(error, data) {
                         postMessage({
                             id: e.data.id,
                             error: error,
@@ -243,16 +202,16 @@ var global = this;
         }
 
         return {
-            init: function (opts) {
+            init: function(opts) {
                 if (opts) {
                     href = opts.workerJs;
                 }
                 return this;
             },
-            on: function (action, func) {
+            on: function(action, func) {
                 method[action] = func;
             },
-            trigger: function (action, opts, callback) {
+            trigger: function(action, opts, callback) {
                 if (method[action]) {
                     // 先尝试用Worker执行，不支持或出错的话再同步执行
                     initWorker();
@@ -263,7 +222,11 @@ var global = this;
                                 opts: opts,
                                 callback: callback
                             };
-                            worker.postMessage({ id: index, action: action, opts: opts });
+                            worker.postMessage({
+                                id: index,
+                                action: action,
+                                opts: opts
+                            });
                             index++;
                         } catch (error) {
                             console.log(error);
@@ -273,27 +236,21 @@ var global = this;
                     }
                 }
             }
-        }
+        };
     })();
 
     // CW.init({workerJs: "./clayout.js"});
 
     // 图片分析（WebAssembly）
-    CW.on("c_analyse", function (opts, callback) {
+    CW.on('c_analyse', function(opts, callback) {
         var imageData = opts.imageData,
             pixes = imageData.data,
-            table = [],
-            list = [],
-            map = {},
-            backgroundColor,
             width = opts.width, // 页面宽度
             ww = width * 4,
             height = opts.height || parseInt(pixes.length / ww), // 页面高度
             scope = opts.scope > 0 ? opts.scope : 10, // 容错值，解决因为压缩导致的颜色偏差
             limit = opts.limit >= 100 ? opts.limit : null, // 图片分片高度，值大于100时才有效
-            size = opts.size >= 1 ? parseInt(opts.size) : 8, // 识别精度
-            s1 = size * ww,
-            s2 = size * 4;
+            size = opts.size >= 1 ? parseInt(opts.size) : 8; // 识别精度
 
         var WA = {};
         var memData;
@@ -301,28 +258,8 @@ var global = this;
 
         loadWebAssembly(wasmUrl, {
             env: {
-                jsLog: function (msg) {
-                    console.log("[log][%d] %d", ++logNo, msg)
-                },
-                // 计算背景色
-                getBgcolor: function (pos, size) {
-                    var h = size / width;
-                    let map = {};
-                    for (let index = pos, count = pos + size; index < count; index += 4) {
-                        if (memData[index + 3] == 2) {// 纯色单元格
-                            let color = (((memData[index] << 8) + memData[index + 1]) << 8) + memData[index + 2];
-                            map[color] = map[color] > 0 ? map[color] + 1 : 1;
-                        }
-                    }
-                    let max = 0;
-                    let bg = 0;
-                    for (const color in map) {
-                        if (map[color] > max) {
-                            max = map[color];
-                            bg = color;
-                        }
-                    }
-                    return bg;
+                jsLog: function(msg) {
+                    console.log('[log][%d] %d', ++logNo, msg);
                 }
             }
         }).then(instance => {
@@ -334,13 +271,17 @@ var global = this;
             let memory = WA.memory;
             let memSize = memory.buffer.byteLength;
             if (memSize < pixes.length) {
-                memSize = Math.ceil(pixes.length * 2 / MEM_BLOCK) * MEM_BLOCK;
-                memory.grow(Math.ceil((memSize - memory.buffer.byteLength) / MEM_BLOCK));
+                memSize = Math.ceil((pixes.length * 2) / MEM_BLOCK) * MEM_BLOCK;
+                memory.grow(
+                    Math.ceil((memSize - memory.buffer.byteLength) / MEM_BLOCK)
+                );
             }
             memData = new Uint8Array(memory.buffer);
 
             // 存放图像数据
             memData.set(pixes, 0);
+
+            console.log(memSize);
 
             // 解析
             var ptr = WA.analyse(0, width, height, size, limit, scope);
@@ -353,11 +294,22 @@ var global = this;
                 scope: scope,
                 size: size,
                 limit: limit,
-                backgroundColor: (0x1000000 + (memData[ptr] << 16) + (memData[ptr + 1] << 8) + memData[ptr + 2]).toString(16).replace(/^1/, "#"),
+                backgroundColor: (
+                    0x1000000 +
+                    (memData[ptr] << 16) +
+                    (memData[ptr + 1] << 8) +
+                    memData[ptr + 2]
+                )
+                    .toString(16)
+                    .replace(/^1/, '#'),
                 list: []
             };
             ptr += 3;
-            var getInt = pos => (memData[pos] << 24) + (memData[pos + 1] << 16) + (memData[pos + 2] << 8) + memData[pos + 3];
+            var getInt = pos =>
+                (memData[pos] << 24) +
+                (memData[pos + 1] << 16) +
+                (memData[pos + 2] << 8) +
+                memData[pos + 3];
             var count = getInt(ptr);
             ptr += 4;
             for (let index = 0; index < count; index++) {
@@ -379,7 +331,7 @@ var global = this;
     });
 
     // 图片分析（js）
-    CW.on("js_analyse", function (opts, callback) {
+    CW.on('js_analyse', function(opts, callback) {
         let startTime = Date.now();
 
         var imageData = opts.imageData,
@@ -398,7 +350,7 @@ var global = this;
             s2 = size * 4;
 
         // 分割图像，先检测空行，进行水平分割，再检查分割出来区域中的空列，进行垂直分割
-        var js_splitImg = function (opts) {
+        var js_splitImg = function(opts) {
             var _list = [],
                 leftIndex = opts.left,
                 topIndex = opts.top,
@@ -416,14 +368,30 @@ var global = this;
                 // 找出空行
                 var rowEmpty = 1;
                 if (CL.isArray(row)) {
-                    for (var colIndex = leftIndex; colIndex <= rightIndex; colIndex++) {
+                    for (
+                        var colIndex = leftIndex;
+                        colIndex <= rightIndex;
+                        colIndex++
+                    ) {
                         var item = row[colIndex];
 
                         // 过滤掉只有背景色的单元
-                        if (item && (!item.color || ((Math.abs(item.color[0] - backgroundColor[0]) > scope) || (Math.abs(item.color[1] - backgroundColor[1]) > scope) || (Math.abs(item.color[2] - backgroundColor[2]) > scope)))) {
+                        if (
+                            item &&
+                            (!item.color ||
+                                (Math.abs(item.color[0] - backgroundColor[0]) >
+                                    scope ||
+                                    Math.abs(
+                                        item.color[1] - backgroundColor[1]
+                                    ) > scope ||
+                                    Math.abs(
+                                        item.color[2] - backgroundColor[2]
+                                    ) > scope))
+                        ) {
                             rowEmpty = 0;
                             delete item.color;
-                            left = colIndex < left || left == -1 ? colIndex : left;
+                            left =
+                                colIndex < left || left == -1 ? colIndex : left;
                             right = colIndex > right ? colIndex : right;
                         } else {
                             delete row[colIndex];
@@ -442,7 +410,8 @@ var global = this;
                         bottom = rowIndex;
                     }
 
-                    if (top >= 0) { // 记录被分割的区域
+                    if (top >= 0) {
+                        // 记录被分割的区域
                         // 找出空列
                         var colEmpty,
                             _top = bottom,
@@ -451,7 +420,11 @@ var global = this;
                             _left = left;
 
                         // 垂直分割
-                        for (var colIndex = left; colIndex <= right; colIndex++) {
+                        for (
+                            var colIndex = left;
+                            colIndex <= right;
+                            colIndex++
+                        ) {
                             colEmpty = 1;
                             for (var n = top; n <= bottom; n++) {
                                 if (table[n] && table[n][colIndex]) {
@@ -470,13 +443,20 @@ var global = this;
                                 _right = colEmpty ? colIndex - 1 : right;
                                 if (_bottom >= _top && _right >= _left) {
                                     // 如果匹配到的区域还存在继续分割的可能，就采用递归的方式继续进行匹配
-                                    if (_top != topIndex || _bottom != bottomIndex || _left != leftIndex || _right != rightIndex) {
-                                        _list = _list.concat(js_splitImg({
-                                            left: _left,
-                                            top: _top,
-                                            right: _right,
-                                            bottom: _bottom
-                                        }));;
+                                    if (
+                                        _top != topIndex ||
+                                        _bottom != bottomIndex ||
+                                        _left != leftIndex ||
+                                        _right != rightIndex
+                                    ) {
+                                        _list = _list.concat(
+                                            js_splitImg({
+                                                left: _left,
+                                                top: _top,
+                                                right: _right,
+                                                bottom: _bottom
+                                            })
+                                        );
                                     } else {
                                         _list.push({
                                             left: _left,
@@ -507,23 +487,32 @@ var global = this;
             return _list;
         };
 
-        console.time("计算索引");
+        console.time('计算索引');
         // 计算索引（纯色方格）
         for (var y = 0, p1 = 0, iy = 0; y < height; y += size, p1 += s1, iy++) {
-            for (var x = 0, p2 = p1, ix = 0; x < width; x += size, p2 += s2, ix++) {
+            for (
+                var x = 0, p2 = p1, ix = 0;
+                x < width;
+                x += size, p2 += s2, ix++
+            ) {
                 var color = null,
                     size_w = size > width - x ? width - x : size,
                     size_h = size > height - y ? height - y : size;
 
                 // 统计方格内颜色值的和
-                for (var i = 0, p3 = p2; i < size_h; i++ , p3 += ww) {
-                    for (var j = 0, p4 = p3; j < size_w; j++ , p4 += 4) {
+                for (var i = 0, p3 = p2; i < size_h; i++, p3 += ww) {
+                    for (var j = 0, p4 = p3; j < size_w; j++, p4 += 4) {
                         var r = pixes[p4],
                             g = pixes[p4 + 1],
                             b = pixes[p4 + 2];
                         if (!color) {
                             color = [r, g, b];
-                        } else if ((Math.abs(color[0] - r) > scope) || (Math.abs(color[1] - g) > scope) || (Math.abs(color[2] - b) > scope)) { // 颜色不一致
+                        } else if (
+                            Math.abs(color[0] - r) > scope ||
+                            Math.abs(color[1] - g) > scope ||
+                            Math.abs(color[2] - b) > scope
+                        ) {
+                            // 颜色不一致
                             color = null;
                             i = size_h;
                             j = size_w;
@@ -539,7 +528,7 @@ var global = this;
 
                 if (color) {
                     table[iy][ix].color = color;
-                    color = color.join("_");
+                    color = color.join('_');
                     if (map[color]) {
                         map[color]++;
                     } else {
@@ -548,9 +537,9 @@ var global = this;
                 }
             }
         }
-        console.timeEnd("计算索引");
+        console.timeEnd('计算索引');
 
-        console.time("判断背景色");
+        console.time('判断背景色');
         // 判断背景色
         var count = 1;
         for (var color in map) {
@@ -560,12 +549,14 @@ var global = this;
             }
         }
         map = count = null;
-        console.timeEnd("判断背景色");
+        console.timeEnd('判断背景色');
 
         // 分割图片
-        console.time("分割图片");
+        console.time('分割图片');
         if (backgroundColor) {
-            backgroundColor = backgroundColor.split("_").map(function (n) { return parseInt(n) });
+            backgroundColor = backgroundColor.split('_').map(function(n) {
+                return parseInt(n);
+            });
             list = js_splitImg({
                 all: 1, // 标记当前是全图匹配
                 top: 0,
@@ -573,13 +564,20 @@ var global = this;
                 left: 0,
                 right: Math.ceil(width / size) - 1
             });
-            backgroundColor = (0x1000000 + (backgroundColor[0] << 16) + (backgroundColor[1] << 8) + backgroundColor[2]).toString(16).replace(/^1/, "#");
+            backgroundColor = (
+                0x1000000 +
+                (backgroundColor[0] << 16) +
+                (backgroundColor[1] << 8) +
+                backgroundColor[2]
+            )
+                .toString(16)
+                .replace(/^1/, '#');
         }
-        console.timeEnd("分割图片");
+        console.timeEnd('分割图片');
 
         // 转换坐标
-        console.time("转换坐标");
-        list.forEach(function (item) {
+        console.time('转换坐标');
+        list.forEach(function(item) {
             for (var key in item) {
                 if (item[key] > 0) {
                     item[key] *= size;
@@ -590,13 +588,13 @@ var global = this;
             item.width = item.right - item.left + 1;
             item.height = item.bottom - item.top + 1;
         });
-        console.timeEnd("转换坐标");
+        console.timeEnd('转换坐标');
 
         // 分片裁剪
-        console.time("分片裁剪");
+        console.time('分片裁剪');
         if (limit) {
             var _list = [];
-            list.forEach(function (item) {
+            list.forEach(function(item) {
                 if (item.height > limit) {
                     var count = Math.ceil(item.height / limit),
                         _height = Math.ceil(item.height / count / 15) * 15; // 避免出现半像素导致的横线，2 * 2.5 * 3
@@ -607,9 +605,12 @@ var global = this;
                             left: item.left,
                             right: item.right,
                             width: item.width,
-                            height: index === count - 1 ? (item.bottom - item.top + 1) : _height // 最后一个有可能高度不等于 _height
+                            height:
+                                index === count - 1
+                                    ? item.bottom - item.top + 1
+                                    : _height // 最后一个有可能高度不等于 _height
                         });
-                        item.top += _height
+                        item.top += _height;
                     }
                 } else {
                     _list.push(item);
@@ -617,7 +618,7 @@ var global = this;
             });
             list = _list;
         }
-        console.timeEnd("分片裁剪");
+        console.timeEnd('分片裁剪');
 
         var data = {
             scope: scope,
@@ -632,29 +633,28 @@ var global = this;
         callback && callback(null, data);
     });
 
-
     var setting = {
         async: false, // 异步模式
         workerJs: null, // worker线程js
         random: false, // 随机展现列表中的词语，为true时越靠前的词语优先级越高
-        orientation: false,	// 根据meta信息调整图片方向
+        orientation: false, // 根据meta信息调整图片方向
         minWidth: 150,
         minHeight: 150,
-        fontFamily: ["黑体"], // 字体
+        fontFamily: ['黑体'], // 字体
         minFontSize: 12, // 基本填充大小
-        fontZoom: 10,	// 最大填充倍数
-        fontColor: "#000000",	// 文字颜色
-        square: false,	// 拉伸填充图案
-        useOnes: false,	// 填充元素只使用一次
-        backgroundColor: "#ffffff",	// 背景色
-        shadowColor: "#000000",	// 原图阴影颜色
+        fontZoom: 10, // 最大填充倍数
+        fontColor: '#000000', // 文字颜色
+        square: false, // 拉伸填充图案
+        useOnes: false, // 填充元素只使用一次
+        backgroundColor: '#ffffff', // 背景色
+        shadowColor: '#000000', // 原图阴影颜色
         onerror: null
     };
 
     var ERR = {
-        "PARAM_INVALID": "参数错误",
-        "READ_FILE_ERROR": "读取文件失败",
-        "ANALYSE_IMG_ERROR": "解析图片失败"
+        PARAM_INVALID: '参数错误',
+        READ_FILE_ERROR: '读取文件失败',
+        ANALYSE_IMG_ERROR: '解析图片失败'
     };
 
     var CL = {
@@ -664,15 +664,38 @@ var global = this;
     window.URL || (window.URL = window.webkitURL);
 
     // 类型判断
-    Array.prototype.forEach.call(["Object", "Function", "String", "Number", "Boolean", "Date", "Undefined", "Null", "Array", "File", "RegExp", "FormData"], function (t, i) {
-        CL["is" + t] = function (obj) {
-            return Object.prototype.toString.call(obj) === "[object " + t + "]";
-        };
-    });
-    CL.isTrueEmpty = function (obj) {
-        return obj === undefined || obj === null || obj === "" || (CL.isNumber(obj) && isNaN(obj));
+    Array.prototype.forEach.call(
+        [
+            'Object',
+            'Function',
+            'String',
+            'Number',
+            'Boolean',
+            'Date',
+            'Undefined',
+            'Null',
+            'Array',
+            'File',
+            'RegExp',
+            'FormData'
+        ],
+        function(t, i) {
+            CL['is' + t] = function(obj) {
+                return (
+                    Object.prototype.toString.call(obj) === '[object ' + t + ']'
+                );
+            };
+        }
+    );
+    CL.isTrueEmpty = function(obj) {
+        return (
+            obj === undefined ||
+            obj === null ||
+            obj === '' ||
+            (CL.isNumber(obj) && isNaN(obj))
+        );
     };
-    CL.isEmpty = function (obj) {
+    CL.isEmpty = function(obj) {
         if (CL.isTrueEmpty(obj)) {
             return true;
         } else if (CL.isObject(obj)) {
@@ -693,7 +716,7 @@ var global = this;
     };
 
     // 获取文件的 ObjectURL
-    CL.getFileUrl = function (file, callback) {
+    CL.getFileUrl = function(file, callback) {
         // 先采用 URL 的方式读取，不支持 URL 时采用 FileReader
         if (CL.isFunction(callback)) {
             if (CL.isFile(file)) {
@@ -710,8 +733,11 @@ var global = this;
                 } else {
                     try {
                         var reader = new FileReader();
-                        reader.onload = reader.onerror = function (e) {
-                            callback(e.type == "error" ? ERR.READ_FILE_ERROR : null, this.result);
+                        reader.onload = reader.onerror = function(e) {
+                            callback(
+                                e.type == 'error' ? ERR.READ_FILE_ERROR : null,
+                                this.result
+                            );
                         };
                         reader.readAsDataURL(file);
                     } catch (error) {
@@ -727,12 +753,12 @@ var global = this;
     };
 
     // 加载图像链接
-    CL.openImgUrl = function (imgurl, callback) {
+    CL.openImgUrl = function(imgurl, callback) {
         // 解析图片方向时必须使用Filereader的方式解析
         if (imgurl) {
             var img = new Image();
-            img.onload = img.onerror = function (e) {
-                callback && callback(e.type == "error" ? "error" : null, this);
+            img.onload = img.onerror = function(e) {
+                callback && callback(e.type == 'error' ? 'error' : null, this);
             };
             img.src = imgurl;
         }
@@ -741,10 +767,10 @@ var global = this;
     };
 
     // 解析图片文件
-    CL.openImgFile = function (file, callback) {
+    CL.openImgFile = function(file, callback) {
         if (CL.isFunction(callback)) {
             if (CL.isFile(file) && /image/.test(file.type)) {
-                CL.getFileUrl(file, function (error, url) {
+                CL.getFileUrl(file, function(error, url) {
                     if (error) {
                         callback(error);
                     } else {
@@ -760,7 +786,7 @@ var global = this;
     };
 
     // 加载图片到canvas
-    CL.loadImgToCanvas = function (img, opts) {
+    CL.loadImgToCanvas = function(img, opts) {
         if (!opts) {
             opts = {};
         }
@@ -770,17 +796,17 @@ var global = this;
             width = img.width;
             height = img.height;
         } else if (width == null) {
-            width = parseInt(height * img.width / img.height);
+            width = parseInt((height * img.width) / img.height);
         } else if (height == null) {
-            height = parseInt(width * img.height / img.width);
+            height = parseInt((width * img.height) / img.width);
         }
 
         if (width < setting.minWidth) {
-            height = parseInt(setting.minWidth * height / width);
+            height = parseInt((setting.minWidth * height) / width);
             width = setting.minWidth;
         }
         if (height < setting.minHeight) {
-            width = parseInt(setting.minHeight * width / height);
+            width = parseInt((setting.minHeight * width) / height);
             height = setting.minHeight;
         }
 
@@ -788,15 +814,22 @@ var global = this;
         if (opts.canvas) {
             canvas = opts.canvas;
         } else {
-            canvas = CL.createCanvas(width, height, opts.viewWidth, opts.viewHeight);
+            canvas = CL.createCanvas(
+                width,
+                height,
+                opts.viewWidth,
+                opts.viewHeight
+            );
         }
 
-        var ctx = canvas.getContext("2d"),
-            x = 0, y = 0,
+        var ctx = canvas.getContext('2d'),
+            x = 0,
+            y = 0,
             sw = width,
             sh = height;
         if (sw != img.width || sh != img.height) {
-            if (opts.type == "contain") { // contain模式
+            if (opts.type == 'contain') {
+                // contain模式
                 sw = width / img.width;
                 sh = height / img.height;
                 if (sw > sh) {
@@ -808,12 +841,15 @@ var global = this;
                     sw = width;
                     y = (height - sh) / 2;
                 }
-            } else { // cover模式
-                canvas.height = sh = height = parseInt(sw * img.height / img.width);
+            } else {
+                // cover模式
+                canvas.height = sh = height = parseInt(
+                    (sw * img.height) / img.width
+                );
             }
         }
         if (opts.backgroundColor) {
-            ctx.fillStyle = opts.backgroundColor;	// 背景色
+            ctx.fillStyle = opts.backgroundColor; // 背景色
             ctx.fillRect(0, 0, width, height);
         }
         ctx.drawImage(img, x, y, sw, sh);
@@ -828,9 +864,9 @@ var global = this;
     };
 
     // 创建画布
-    CL.createCanvas = function (width, height, viewWidth, viewHeight, name) {
+    CL.createCanvas = function(width, height, viewWidth, viewHeight, name) {
         var backgroundColor;
-        if (typeof width == "object" && width && width.width) {
+        if (typeof width == 'object' && width && width.width) {
             backgroundColor = width.backgroundColor;
             name = width.name;
             viewWidth = width.viewWidth;
@@ -838,7 +874,7 @@ var global = this;
             height = width.height;
             width = width.width;
         }
-        var canvas = document.createElement("canvas");
+        var canvas = document.createElement('canvas');
         if (width > 0) {
             canvas.width = width;
             if (!(height > 0)) {
@@ -849,16 +885,16 @@ var global = this;
             canvas.height = height;
         }
         if (viewWidth) {
-            canvas.style.width = viewWidth + (viewWidth > 0 ? "px" : "");
+            canvas.style.width = viewWidth + (viewWidth > 0 ? 'px' : '');
         }
         if (viewHeight) {
-            canvas.style.height = viewHeight + (viewHeight > 0 ? "px" : "");
+            canvas.style.height = viewHeight + (viewHeight > 0 ? 'px' : '');
         }
         if (name) {
-            canvas.setAttribute("data-name", name);
+            canvas.setAttribute('data-name', name);
         }
         if (backgroundColor) {
-            var ctx = canvas.getContext("2d");
+            var ctx = canvas.getContext('2d');
             ctx.fillStyle = backgroundColor;
             ctx.fillRect(0, 0, canvas.width, canvas.height);
         }
@@ -881,7 +917,7 @@ var global = this;
      * @param {Number} opts.bgtype PC页背景图加载方式，二进制位表示，从右往左分别是： 保持在窗口顶部 | 在垂直方向上重复 | 水平方向拉伸
      * @param {Function} callback 回掉函数
      */
-    CL.analyse = function (img, opts, callback) {
+    CL.analyse = function(img, opts, callback) {
         //////////////////////////////
         console.log(opts);
         if (CL.isFunction(opts)) {
@@ -892,16 +928,16 @@ var global = this;
         }
         if (CL.isFunction(callback)) {
             var tagName = img && img.tagName;
-            if (tagName === "IMG") {
+            if (tagName === 'IMG') {
                 img = this.loadImgToCanvas(img).canvas;
-            } else if (tagName !== "CANVAS") {
+            } else if (tagName !== 'CANVAS') {
                 return callback(ERR.PARAM_INVALID);
             }
             analyse(img, opts, callback);
         }
     };
     function analyse(canvas, opts, callback) {
-        var ctx = canvas.getContext("2d"),
+        var ctx = canvas.getContext('2d'),
             width = canvas.width,
             height = canvas.height,
             sourceData = ctx.getImageData(0, 0, width, height),
@@ -912,230 +948,283 @@ var global = this;
             limit = opts.limit, // 切片高度，超过这个值会进行分割
             combine = opts.combine == 1, // 是否开启小图片合并
             engine = opts.engine, // 使用的解析引擎：0-js，1-WebAssembly
-            quality = opts.quality >= 0.5 && opts.quality <= 1 ? opts.quality : 0.7, // 保存的图像质量，默认为0.7
+            quality =
+                opts.quality >= 0.5 && opts.quality <= 1 ? opts.quality : 0.7, // 保存的图像质量，默认为0.7
             backgroundColor, // 背景色
             list = []; // 解析结果
 
         var bgimg; // PC背景图
         var engineTime; // 解析引擎耗时
 
-        series(setting.async, [
-            // 图像解析
-            function (data, next) {
-                var _series = this;
-                var engineType = engine == 1 ? "c_analyse" : "js_analyse";
-                console.time(engineType);
-                CW.trigger(engineType, {
-                    imageData: sourceData,
-                    width: canvas.width,
-                    height: canvas.height,
-                    size: unitSize,
-                    scope: scope,
-                    limit: limit
-                }, function (error, data) {
-                    console.timeEnd(engineType);
-                    if (!error && data && data.list) {
-                        backgroundColor = data.backgroundColor;
-                        unitSize = data.size;
-                        list = data.list;
-                        engineTime = data.time;
-                    } else {
-                        error && console.log(error);
-                        error = ERR.ANALYSE_IMG_ERROR;
-                    }
-                    onprogress && onprogress.call(_series);
-                    next(error);
-                });
-            },
-            // 提取图像数据
-            function (data, next) {
-                var _series = this;
-                list.forEach(function (item, index) {
-                    item.canvas = CL.createCanvas(item);
-                    var ctx = item.canvas.getContext("2d");
-                    ctx.drawImage(canvas, item.left, item.top, item.width, item.height, 0, 0, item.width, item.height);
-                });
-                onprogress && onprogress.call(_series);
-                next();
-            },
-            // 合并小图片
-            function (data, next) {
-                var _series = this;
-                if (combine) {
-                    var _list = [],
-                        small = [];
-                    list.forEach(function (item, i) {
-                        if (item.width * item.height < 160000) {
-                            small.push(item);
-                        } else {
-                            _list.push(item);
-                        }
-                    });
-
-                    if (small.length > 1) {
-                        // 将小图片弄成雪碧图的形式
-                        // 先按高度排序，然后从左往有进行布局，宽度取 width 值
-                        small = small.sort(function (a, b) {
-                            return b.height != a.height ? b.height - a.height : b.width - a.width;
-                        });
-                        var _width, _height, _left, _top, temp;
-                        var _add = function (item, left, top) {
-                            item && temp && temp.list.push({
-                                left: left,
-                                top: top,
-                                originalLeft: item.left,
-                                originalTop: item.top,
-                                width: item.width,
-                                height: item.height,
-                                canvas: item.canvas
-                            });
-                        };
-                        for (var index = 0; index < small.length; index++) {
-                            if (!temp) {
-                                temp = {
-                                    width: 0,
-                                    height: 0,
-                                    list: []
-                                };
+        series(
+            [
+                // 图像解析
+                function(next) {
+                    var _series = this;
+                    var engineType = engine == 1 ? 'c_analyse' : 'js_analyse';
+                    console.time(engineType);
+                    CW.trigger(
+                        engineType,
+                        {
+                            imageData: sourceData,
+                            width: canvas.width,
+                            height: canvas.height,
+                            size: unitSize,
+                            scope: scope,
+                            limit: limit
+                        },
+                        function(error, data) {
+                            console.timeEnd(engineType);
+                            if (!error && data && data.list) {
+                                backgroundColor = data.backgroundColor;
+                                unitSize = data.size;
+                                list = data.list;
+                                engineTime = data.time;
+                            } else {
+                                error && console.log(error);
+                                error = ERR.ANALYSE_IMG_ERROR;
                             }
+                            onprogress && onprogress.call(_series);
+                            next(error);
+                        }
+                    );
+                },
+                // 提取图像数据
+                function(next) {
+                    var _series = this;
+                    list.forEach(function(item, index) {
+                        item.canvas = CL.createCanvas(item);
+                        var ctx = item.canvas.getContext('2d');
+                        ctx.drawImage(
+                            canvas,
+                            item.left,
+                            item.top,
+                            item.width,
+                            item.height,
+                            0,
+                            0,
+                            item.width,
+                            item.height
+                        );
+                    });
+                    onprogress && onprogress.call(_series);
+                    next();
+                },
+                // 合并小图片
+                function(next) {
+                    var _series = this;
+                    if (combine) {
+                        var _list = [],
+                            small = [];
+                        list.forEach(function(item, i) {
+                            if (item.width * item.height < 160000) {
+                                small.push(item);
+                            } else {
+                                _list.push(item);
+                            }
+                        });
 
-                            // 先将第一个放入队列
-                            var item = small[index];
-                            _left = unitSize;
-                            _top = temp.height + unitSize;
-                            _width = item.width + unitSize;
-                            _height = item.height + unitSize;
-                            _add(item, _left, _top);
+                        if (small.length > 1) {
+                            // 将小图片弄成雪碧图的形式
+                            // 先按高度排序，然后从左往有进行布局，宽度取 width 值
+                            small = small.sort(function(a, b) {
+                                return b.height != a.height
+                                    ? b.height - a.height
+                                    : b.width - a.width;
+                            });
+                            var _width, _height, _left, _top, temp;
+                            var _add = function(item, left, top) {
+                                item &&
+                                    temp &&
+                                    temp.list.push({
+                                        left: left,
+                                        top: top,
+                                        originalLeft: item.left,
+                                        originalTop: item.top,
+                                        width: item.width,
+                                        height: item.height,
+                                        canvas: item.canvas
+                                    });
+                            };
+                            for (var index = 0; index < small.length; index++) {
+                                if (!temp) {
+                                    temp = {
+                                        width: 0,
+                                        height: 0,
+                                        list: []
+                                    };
+                                }
 
-                            // 水平方向上放置图片
-                            while (small[index + 1] && _width <= width) {
-                                var __width = 0,
-                                    __height = 0;
-                                _left = _width + unitSize;
+                                // 先将第一个放入队列
+                                var item = small[index];
+                                _left = unitSize;
+                                _top = temp.height + unitSize;
+                                _width = item.width + unitSize;
+                                _height = item.height + unitSize;
+                                _add(item, _left, _top);
 
-                                // 如果高度没有超过第一个，就在竖直方向上放置
-                                while (small[index + 1] && __height + small[index + 1].height <= _height) {
-                                    index++;
-                                    item = small[index];
-                                    _add(item, _left, _top + __height);
-                                    __width = Math.max(__width, item.width);
+                                // 水平方向上放置图片
+                                while (small[index + 1] && _width <= width) {
+                                    var __width = 0,
+                                        __height = 0;
+                                    _left = _width + unitSize;
 
-                                    var ___width = item.width + unitSize,
-                                        ___height = item.height + unitSize;
-
-                                    // 看下水平方向上能否再放下
-                                    while (small[index + 1] && ___width + small[index + 1].width + unitSize <= __width) {
+                                    // 如果高度没有超过第一个，就在竖直方向上放置
+                                    while (
+                                        small[index + 1] &&
+                                        __height + small[index + 1].height <=
+                                            _height
+                                    ) {
                                         index++;
                                         item = small[index];
-                                        _add(item, _left + ___width, _top + __height);
-                                        ___width += item.width + unitSize;
-                                    }
-                                    __height += ___height;
-                                }
-                                if (__width) {
-                                    _width += __width + unitSize;
-                                } else {
-                                    break;
-                                }
-                            }
+                                        _add(item, _left, _top + __height);
+                                        __width = Math.max(__width, item.width);
 
-                            // 判断是另起一行还是用一张新图继续
-                            temp.width = Math.max(temp.width, _width) + unitSize;
-                            temp.height += _height + unitSize;
-                            if (temp.height > width || !small[index + 1]) {
-                                temp.backgroundColor = backgroundColor;
-                                temp.canvas = CL.createCanvas(temp);
-                                var ctx = temp.canvas.getContext("2d");
-                                temp.list.forEach(function (item) {
-                                    ctx.drawImage(item.canvas, item.left, item.top);
-                                    delete item.canvas;
+                                        var ___width = item.width + unitSize,
+                                            ___height = item.height + unitSize;
+
+                                        // 看下水平方向上能否再放下
+                                        while (
+                                            small[index + 1] &&
+                                            ___width +
+                                                small[index + 1].width +
+                                                unitSize <=
+                                                __width
+                                        ) {
+                                            index++;
+                                            item = small[index];
+                                            _add(
+                                                item,
+                                                _left + ___width,
+                                                _top + __height
+                                            );
+                                            ___width += item.width + unitSize;
+                                        }
+                                        __height += ___height;
+                                    }
+                                    if (__width) {
+                                        _width += __width + unitSize;
+                                    } else {
+                                        break;
+                                    }
+                                }
+
+                                // 判断是另起一行还是用一张新图继续
+                                temp.width =
+                                    Math.max(temp.width, _width) + unitSize;
+                                temp.height += _height + unitSize;
+                                if (temp.height > width || !small[index + 1]) {
+                                    temp.backgroundColor = backgroundColor;
+                                    temp.canvas = CL.createCanvas(temp);
+                                    var ctx = temp.canvas.getContext('2d');
+                                    temp.list.forEach(function(item) {
+                                        ctx.drawImage(
+                                            item.canvas,
+                                            item.left,
+                                            item.top
+                                        );
+                                        delete item.canvas;
+                                    });
+                                    _list.push(temp);
+                                    temp = null;
+                                }
+                            }
+                            list = _list;
+                        }
+                    }
+                    onprogress && onprogress.call(_series);
+                    next();
+                },
+                // 编号
+                function(next) {
+                    var _series = this;
+                    list.forEach(function(item, index) {
+                        item.index = index;
+                        item.data = {};
+                    });
+                    onprogress && onprogress.call(_series);
+                    next();
+                },
+                // 缩放
+                function(next) {
+                    var _series = this;
+                    if (type != 1) {
+                        var canvas = CL.createCanvas();
+                        var ctx = canvas.getContext('2d');
+                        for (var i = 1; i < 4; i++) {
+                            var w = i * 320,
+                                s = w / width;
+                            if (width > w) {
+                                list.forEach(function(item) {
+                                    canvas.width = parseInt(item.width * s);
+                                    canvas.height = parseInt(item.height * s);
+                                    ctx.drawImage(
+                                        item.canvas,
+                                        0,
+                                        0,
+                                        canvas.width,
+                                        canvas.height
+                                    );
+                                    item.data[w] = canvas.toDataURL(
+                                        'image/jpeg',
+                                        quality
+                                    );
                                 });
-                                _list.push(temp);
-                                temp = null;
+                            } else {
+                                break;
                             }
                         }
-                        list = _list;
                     }
-                }
-                onprogress && onprogress.call(_series);
-                next();
-            },
-            // 编号
-            function (data, next) {
-                var _series = this;
-                list.forEach(function (item, index) {
-                    item.index = index;
-                    item.data = {};
-                });
-                onprogress && onprogress.call(_series);
-                next();
-            },
-            // 缩放
-            function (data, next) {
-                var _series = this;
-                if (type != 1) {
-                    var canvas = CL.createCanvas();
-                    var ctx = canvas.getContext("2d");
-                    for (var i = 1; i < 4; i++) {
-                        var w = i * 320,
-                            s = w / width;
-                        if (width > w) {
-                            list.forEach(function (item) {
-                                canvas.width = parseInt(item.width * s);
-                                canvas.height = parseInt(item.height * s);
-                                ctx.drawImage(item.canvas, 0, 0, canvas.width, canvas.height);
-                                item.data[w] = canvas.toDataURL("image/jpeg", quality);
-                            });
+                    onprogress && onprogress.call(_series);
+                    next();
+                },
+                // 生成base64数据
+                function(next) {
+                    var _series = this;
+                    list.forEach(function(item, index) {
+                        item.data.src = item.canvas.toDataURL(
+                            'image/jpeg',
+                            quality
+                        );
+                        delete item.canvas;
+                    });
+                    // PC页背景图
+                    if (type == 1 && opts.bgimg) {
+                        bgimg = opts.bgimg;
+                        if (bgimg.tagName === 'IMG') {
+                            bgimg = CL.loadImgToCanvas(bgimg).canvas;
+                        }
+                        if (bgimg.tagName === 'CANVAS') {
+                            bgimg = {
+                                index: 'bg',
+                                width: bgimg.width,
+                                height: bgimg.height,
+                                data: {
+                                    src: bgimg.toDataURL('image/jpeg', quality)
+                                }
+                            };
                         } else {
-                            break;
+                            bgimg = null;
                         }
                     }
+                    onprogress && onprogress.call(_series);
+                    next();
                 }
-                onprogress && onprogress.call(_series);
-                next();
-            },
-            // 生成base64数据
-            function (data, next) {
-                var _series = this;
-                list.forEach(function (item, index) {
-                    item.data.src = item.canvas.toDataURL("image/jpeg", quality);
-                    delete item.canvas;
-                });
-                // PC页背景图
-                if (type == 1 && opts.bgimg) {
-                    bgimg = opts.bgimg;
-                    if (bgimg.tagName === "IMG") {
-                        bgimg = CL.loadImgToCanvas(bgimg).canvas;
-                    }
-                    if (bgimg.tagName === "CANVAS") {
-                        bgimg = {
-                            index: "bg",
-                            width: bgimg.width,
-                            height: bgimg.height,
-                            data: {
-                                src: bgimg.toDataURL("image/jpeg", quality)
-                            }
-                        };
-                    } else {
-                        bgimg = null;
-                    }
-                }
-                onprogress && onprogress.call(_series);
-                next();
+            ],
+            function(error) {
+                let data = {
+                    opts: opts,
+                    type: type,
+                    width: width,
+                    height: height,
+                    backgroundImage: bgimg,
+                    backgroundColor: backgroundColor,
+                    list: list,
+                    engineTime: engineTime
+                };
+                callback(error, data);
             }
-        ], function (error) {
-            let data = {
-                opts: opts,
-                type: type,
-                width: width,
-                height: height,
-                backgroundImage: bgimg,
-                backgroundColor: backgroundColor,
-                list: list,
-                engineTime: engineTime
-            };
-            callback(error, data);
-        }, true);
+        );
     }
 
     return CL;
