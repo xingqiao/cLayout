@@ -1,18 +1,5 @@
 <!DOCTYPE html>
 <html lang="zh-cn">
-<head>
-<meta charset="utf-8">
-<title>自动切图DEMO</title>
-<% if (data.type != 1) { %>
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=0" />
-<% } %>
-<meta name="format-detection" content="telephone=no">
-<meta http-equiv="Content-Language" content="zh-cn" />
-<meta name="author" content="Tencent-ISUX-Music" />
-<meta name="Copyright" content="Tencent" />
-<meta name="description" content="QQ音乐" />
-<meta name="keywords" content="QQ音乐" />
-<meta name="applicable-device" content="mobile">
 <%#
     模板数据
     data = {
@@ -97,30 +84,30 @@
     var opts = data.opts || {};
     var pageWidth = data.width || 384;
     var css = [];
-    css.push("body,.bgwrap{width:100%;margin:0;background-color:" + data.backgroundColor + "}");
-    css.push(".bglist{width:" + pageWidth + "px}");
-    css.push(".bgimg{position:absolute;background-repeat:no-repeat}");
+    css.push(`html,body,.bgwrap{width:100%;margin:0;background-color:${data.backgroundColor}}`);
+    css.push(`.bglist{width:${pageWidth}px}`);
+    css.push('.bgimg{position:absolute;background-repeat:no-repeat}');
     if (data.list && data.list.forEach) {
-        data.list.forEach(function(item){
+        data.list.forEach(function(item) {
             css.push(
-                ".bg-" + item.index + "{"
-                    + "width:" + item.width + "px;"
-                    + "height:" + item.height + "px;"
-                    + "left:" + (item.left || 0) + "px;"
-                    + "top:" + (item.top || 0) + "px;"
-                    + "background-image:url(" + item.data.src + ");"
-                + "}"
+                `.bg-${item.index}{` +
+                    `width:${item.width}px;` +
+                    `height:${item.height}px;` +
+                    `left:${item.left || 0}px;` +
+                    `top:${item.top || 0}px;` +
+                    `background-image:url(${item.data.src});` +
+                '}'
             );
             if (item.list && item.list.forEach) {
-                item.list.forEach(function(sub, subIndex){
+                item.list.forEach(function(sub, subIndex) {
                     css.push(
-                        ".bg-" + item.index + "-" + subIndex + "{"
-                            + "width:" + sub.width + "px;"
-                            + "height:" + sub.height + "px;"
-                            + "left:" + sub.originalLeft + "px;"
-                            + "top:" + sub.originalTop + "px;"
-                            + "background-position:-" + (sub.left || 0) + "px -" + (sub.top || 0) + "px"
-                        + "}"
+                        `.bg-${item.index}-${subIndex}{` +
+                            `width:${sub.width}px;` +
+                            `height:${sub.height}px;` +
+                            `left:${sub.originalLeft}px;` +
+                            `top:${sub.originalTop}px;` +
+                            `background-position:-${sub.left || 0}px -${sub.top || 0}px;` +
+                        '}'
                     );
                 });
             }
@@ -130,48 +117,77 @@
             var w = i * 320;
             if (data.width > w) {
                 var _sub = [];
-                data.list.forEach(function(item){
+                data.list.forEach(function(item) {
                     if (item.data[w]) {
-                        _sub.push(".bg-" + item.index + "{background-image:url(" + item.data[w] + ")}");
+                        _sub.push(`.bg-${item.index}{background-image:url(${item.data[w]})}`);
                     }
                 });
                 if (_sub.length) {
-                    css.push("@media (max-width: " + w + "px) {" + _sub.join("") + "}");
+                    css.push(`@media (max-width: ${w}px) {${_sub.join('')}}`);
                 }
             }
         }
     }
     var bgDom;
     if (data.type == 1) {
-        css.push(".bgwrap{position:relative;width:" + pageWidth + "px;margin:0 auto}");
+        css.push(`.bgwrap{position:relative;width:${pageWidth}px;margin:0 auto}`);
         var bgimg = data.backgroundImage || {};
-        var bgtype = parseInt(data.opts && data.opts.bgtype || 0);
+        var bgtype = parseInt((data.opts && data.opts.bgtype) || 0);
         var background = [];
         if (bgimg.data && bgimg.data.src) {
-            background.push("background:url(" + bgimg.data.src + ") no-repeat 50% 0");
+            background.push(`background:url(${bgimg.data.src}) no-repeat 50% 0`);
         }
         if (bgtype & 1) {
             bgDom = 1;
         }
         if (bgtype & 2) {
-            background.push("background-repeat-y:repeat");
+            background.push('background-repeat-y:repeat');
         }
         if (bgtype & 3) {
-            background.push("background-size:cover");
+            background.push('background-size:cover');
         }
         if (opts.bgcolor) {
-            background.push("background-color:" + opts.bgcolor);
+            background.push(`background-color:${opts.bgcolor}`);
         }
         if (background.length) {
-            css.push((bgDom ? ".bgcover" : "body") + "{" + background.join(";") + "}");
+            css.push(`${bgDom ? '.bgcover' : 'body'}{${background.join(';')}}`);
             if (bgDom) {
-                css.push(".bgcover{position:fixed;top:0;bottom:0;left:0;right:0}");
+                css.push('.bgcover{position:fixed;top:0;bottom:0;left:0;right:0}');
             }
         }
     } else {
-        css.push(".bglist{transform-origin:0 0}");
+        css.push('.bglist{transform-origin:0 0}');
     }
 %>
+<head>
+<meta charset="utf-8">
+<title>自动切图DEMO</title>
+<% if (data.type != 1) { %>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=0" />
+<% if (opts.zoomType == 1) { %>
+<script>
+    ;(function(){
+        var width = <%- pageWidth %>, s = 1;
+        var viewport = document.querySelector('meta[name="viewport"]');
+        function update() {
+            var ts = window.innerWidth * s / width;
+            if (s !== ts) {
+                viewport.setAttribute('content', 'width=device-width,initial-scale=' + (s = ts) + ',maximum-scale=1,user-scalable=0');
+            }
+        }
+        window.addEventListener('resize', update);
+        update();
+    })();
+</script>
+<% } %>
+<% } %>
+<meta name="format-detection" content="telephone=no">
+<meta http-equiv="Content-Language" content="zh-cn" />
+<meta name="author" content="Tencent-ISUX-Music" />
+<meta name="Copyright" content="Tencent" />
+<meta name="description" content="QQ音乐" />
+<meta name="keywords" content="QQ音乐" />
+<meta name="applicable-device" content="mobile">
 <style>
 <%- css.join("\n") %>
 </style>
@@ -200,7 +216,7 @@
     </div>
 </div>
 
-<% if (data.type != 1) { %>
+<% if (data.type != 1 && opts.zoomType != 1) { %>
 <!--自动调节背景缩放-->
 <script>
     ;(function(){
@@ -219,9 +235,7 @@
         }
         window.addEventListener("resize", function(){
             s = window.innerWidth / width;
-            if (s != 1) {
-                bglist.style.zoom = s;
-            }
+            bglist.style.zoom = s;
         });
     })();
 </script>

@@ -63,4 +63,4 @@ details>div{margin-left:1.5em}
 .result th{font-weight:500;font-size:1.5em;line-height:2em}
 .result td{line-height:1.6em}
 .result img{display:block;margin:2px auto;max-width:200px;max-height:100px}
-.result_export{display:inline-block;margin-left:1em;padding:5px 15px;border:2px solid #f00;font-size:1.2em;color:#fff;background:#f00;vertical-align:middle;}
+.result_export{display:inline-block;margin-left:1em;margin-top:3em;padding:5px 15px;border:2px solid #f00;font-size:1.2em;color:#fff;background:#f00;vertical-align:middle;}

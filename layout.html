@@ -46,13 +46,18 @@
                             <div><label title="页面居中展示，两旁留白支持设置背景图和背景色"><input type="radio" class="js_setting" name="type" data-name="type" value="1">PC</label></div>
                         </div>
                         <div class="js_item" data-part="0">
+                            <label>缩放类型</label>
+                            <label><input type="radio" class="js_setting" name="zoomType" data-name="zoomType" value="0" checked>zoom</label>
+                            <label><input type="radio" class="js_setting" name="zoomType" data-name="zoomType" value="1">viewport</label>
+                        </div>
+                        <div class="js_item" data-part="0">
                             <label>页面宽度</label>
                             <input type="number" class="js_setting" data-name="size" min="320" max="960" step="1" value="640"> px
                             <input type="range" class="js_setting" data-name="size" min="320" max="960" step="1" value="640">
                         </div>
                         <div class="js_item" data-part="1">
                             <label>背景色</label>
-                            <input type="text" class="js_setting" data-name="bgcolor" value="#ffffff" title="不设置或指无效时为白色">
+                            <input type="text" class="js_setting" data-name="bgcolor" value="" placeholder="默认根据背景图自动获取">
                         </div>
                         <div class="js_item" data-part="1">
                             <label>背景图</label>

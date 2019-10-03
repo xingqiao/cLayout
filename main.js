@@ -29,7 +29,7 @@ app.on("ready", function () {
         width: 1200,
         height: 1000,
         webPreferences: {
-            // nodeIntegration: false   // 在渲染进程中禁用Nodejs环境
+            nodeIntegration: true   // 在渲染进程中禁用Nodejs环境
         }
     });
 
@@ -58,7 +58,7 @@ app.on("ready", function () {
 
     utils.is_win = /win/i.test(os.platform());
 
-// 类型判断
+    //#region 类型判断
     Array.prototype.forEach.call(["Object", "Function", "String", "Number", "Boolean", "Date", "Undefined", "Null", "Array", "File", "RegExp"], function(t, i) {
         utils["is" + t] = function(obj) {
             return Object.prototype.toString.call(obj) === "[object " + t + "]";
@@ -86,8 +86,9 @@ app.on("ready", function () {
         }
         return false;
     };
+    //#endregion
 
-// 执行系统命令
+    //#region 执行系统命令
 
     /**
      * 执行系统命令
@@ -140,7 +141,9 @@ app.on("ready", function () {
         }, cb);
     };
 
-// 文件操作
+    //#endregion
+
+    //#region 文件操作
 
     /**
      * 复制文件
@@ -254,7 +257,9 @@ app.on("ready", function () {
         });
     };
 
-// 流程控制
+    //#endregion
+
+    //#region 流程控制
 
     /**
      * 串行流程控制，类似async.js
@@ -338,7 +343,9 @@ app.on("ready", function () {
         _iterator(0);
     };
 
-// 其他
+    //#endregion
+
+    //#region 其他
 
     /**
      * 过滤
@@ -384,6 +391,8 @@ app.on("ready", function () {
             }
         });
     };
+
+    //#endregion
 
     return utils;
 })("utils");
